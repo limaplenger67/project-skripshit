@@ -12,18 +12,20 @@ function setFlash($key, $message) {
 }
 
 function getFlash($key) {
-function requireLogin() {
-    if (!isset($_SESSION['siswa_id'])) {
-        setFlash('error', 'Silakan masuk terlebih dahulu untuk mengakses halaman ini.');
-        header("Location: login.php");
-        exit;
-    }
-}
     if (isset($_SESSION['flash'][$key])) {
         $msg = $_SESSION['flash'][$key];
         unset($_SESSION['flash'][$key]);
         return $msg;
     }
     return null;
+}
+
+// Halaman yang memanggil fungsi ini hanya bisa diakses siswa yang sudah login
+function requireLogin() {
+    if (!isset($_SESSION['siswa_id'])) {
+        setFlash('error', 'Silakan masuk terlebih dahulu untuk mengakses halaman ini.');
+        header("Location: login.php");
+        exit;
+    }
 }
 ?>
