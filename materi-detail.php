@@ -2,6 +2,7 @@
 $pageTitle = "Detail Materi";
 require_once "config/database.php";
 require_once "includes/auth.php";
+requireLogin();
 
 // Validasi parameter id
 if (!isset($_GET["id"]) || !is_numeric($_GET["id"])) {

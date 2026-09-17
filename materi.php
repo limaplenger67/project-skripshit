@@ -2,6 +2,7 @@
 $pageTitle = "Materi";
 require_once "config/database.php";
 require_once "includes/auth.php";
+requireLogin();
 
 // Ambil semua materi yang sudah dipublikasikan beserta jumlah submaterinya
 $query = "SELECT m.*, 
