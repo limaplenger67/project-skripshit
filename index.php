@@ -1,6 +1,7 @@
 <?php
 $pageTitle = "Belajar Fisika Jadi Lebih Mudah";
 require_once "config/database.php";
+require_once "includes/auth.php";
 
 // Ambil data materi dari database (nanti dipakai lagi di halaman materi)
 $materiList = mysqli_query($conn, "SELECT * FROM materi WHERE status_publikasi = 'publik' ORDER BY id ASC");
@@ -31,11 +32,11 @@ require_once "includes/head.php";
                 </p>
 
                 <div class="mt-8 flex flex-wrap items-center gap-4">
-                    <a href="#materi" class="inline-flex items-center gap-2 rounded-full bg-navy px-7 py-3 text-sm font-semibold text-warmwhite transition-colors hover:bg-blue">
+                    <a href="materi.php" class="inline-flex items-center gap-2 rounded-full bg-navy px-7 py-3 text-sm font-semibold text-warmwhite transition-colors hover:bg-blue">
                         Mulai Belajar
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
                     </a>
-                    <a href="#chat-ai" class="inline-flex items-center gap-2 rounded-full border-2 border-navy/20 px-7 py-3 text-sm font-semibold text-navy transition-colors hover:border-navy">
+                    <a href="#chat.php" class="inline-flex items-center gap-2 rounded-full border-2 border-navy/20 px-7 py-3 text-sm font-semibold text-navy transition-colors hover:border-navy">
                         Jelajahi PhyZone
                     </a>
                 </div>
@@ -138,7 +139,7 @@ require_once "includes/head.php";
                         <p class="mt-2 flex-1 text-sm leading-relaxed text-darktext/75">
                             <?php echo $materi['deskripsi']; ?>
                         </p>
-                        <a href="#materi" class="mt-5 inline-flex w-fit items-center gap-2 rounded-full bg-navy px-5 py-2.5 text-sm font-semibold text-warmwhite transition-colors group-hover:bg-blue">
+                        <a href="materi-detail.php?id=<?php echo $materi['id']; ?>" class="mt-5 inline-flex w-fit items-center gap-2 rounded-full bg-navy px-5 py-2.5 text-sm font-semibold text-warmwhite transition-colors group-hover:bg-blue">
                             Masuk Materi
                             <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
                         </a>
