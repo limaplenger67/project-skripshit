@@ -29,13 +29,16 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $siswa = mysqli_fetch_assoc($result);
         mysqli_stmt_close($stmt);
 
-        if ($siswa && password_verify($password, $siswa["password"])) {
+                if (!$siswa) {
+            $error = "Username belum terdaftar. Silakan daftar dulu lewat halaman Register.";
+        } elseif (!password_verify($password, $siswa["password"])) {
+            $error = "Password salah. Coba periksa kembali.";
+        } else {
+            // Login berhasil
             $_SESSION["siswa_id"] = $siswa["id"];
             $_SESSION["siswa_nama"] = $siswa["nama"];
             header("Location: materi.php");
             exit;
-        } else {
-            $error = "Username atau password salah.";
         }
     }
 }
