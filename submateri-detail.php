@@ -90,6 +90,17 @@ require_once "includes/head.php";
             <p class="text-darktext/60">Isi submateri ini belum tersedia.</p>
         <?php endif; ?>
     </article>
+    
+        <?php if (!empty($submateri["simulasi"])): ?>
+        <?php
+        $simFile = "includes/simulasi-" . $submateri["simulasi"] . ".php";
+        if (file_exists($simFile)) {
+            include $simFile;
+        }
+        ?>
+    <?php endif; 
+    
+    ?>
 
     <!-- Navigasi sebelumnya / berikutnya -->
     <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-between">
