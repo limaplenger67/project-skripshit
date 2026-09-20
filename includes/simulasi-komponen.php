@@ -2,8 +2,8 @@
 <section class="mt-8 rounded-2xl border border-darktext/10 bg-white p-6 sm:p-8">
     <h2 class="font-heading text-lg font-bold text-navy">Simulasi Interaktif</h2>
     <p class="mt-1 text-sm text-darktext/70">
-        Perahu mendayung lurus ke seberang sungai, tetapi arus mendorongnya ke kanan. Atur kecepatan dayung
-        dan kecepatan arus, lalu perhatikan jalur resultan dan titik mendaratnya.
+        Perahu mendayung lurus ke seberang sungai, tetapi arus mendorongnya ke kanan. Atur kecepatan dayung,
+        kecepatan arus, dan posisi awal perahu, lalu perhatikan jalur resultan dan titik mendaratnya.
     </p>
 
     <!-- Kanvas -->
@@ -12,7 +12,7 @@
     </div>
 
     <!-- Kontrol -->
-    <div class="mt-6 grid gap-5 sm:grid-cols-2">
+    <div class="mt-6 grid gap-5 sm:grid-cols-3">
         <div>
             <label class="mb-1 flex items-center justify-between text-sm font-medium text-darktext">
                 <span>Kecepatan dayung (v perahu)</span>
@@ -30,6 +30,15 @@
             <input id="arus" type="range" min="0" max="3" step="0.1" value="1"
                 class="w-full accent-navy" />
             <p class="mt-1 text-xs text-darktext/60">Kecepatan air sungai, arahnya sepanjang sungai ke kanan.</p>
+        </div>
+        <div>
+            <label class="mb-1 flex items-center justify-between text-sm font-medium text-darktext">
+                <span>Posisi awal perahu</span>
+                <span id="posisiVal" class="font-semibold text-navy">Tengah</span>
+            </label>
+            <input id="posisi" type="range" min="0" max="100" step="1" value="50"
+                class="w-full accent-navy" />
+            <p class="mt-1 text-xs text-darktext/60">Geser untuk memindahkan titik berangkat ke kiri atau kanan.</p>
         </div>
     </div>
 
@@ -55,7 +64,8 @@
 
     <p class="mt-4 text-xs text-darktext/60">
         Keterangan: panah hijau adalah kecepatan dayung (sumbu Y), panah biru adalah arus (sumbu X),
-        dan panah navy adalah kecepatan resultan yang benar-benar dialami perahu.
+        dan panah navy adalah kecepatan resultan yang benar-benar dialami perahu. Coba geser posisi awal
+        ke kiri atau kanan: arah resultan tidak berubah, yang berubah hanya titik mendaratnya.
     </p>
 </section>
 

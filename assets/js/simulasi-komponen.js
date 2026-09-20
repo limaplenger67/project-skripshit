@@ -7,8 +7,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
     var elDayung = document.getElementById("dayung");
     var elArus = document.getElementById("arus");
+    var elPosisi = document.getElementById("posisi");
     var dayungVal = document.getElementById("dayungVal");
     var arusVal = document.getElementById("arusVal");
+    var posisiVal = document.getElementById("posisiVal");
     var vyVal = document.getElementById("vyVal");
     var vxVal = document.getElementById("vxVal");
     var vVal = document.getElementById("vVal");
@@ -17,7 +19,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // Geometri sungai
     var tepiAtas = 60;      // garis tepi jauh
     var tepiBawah = H - 60; // garis tepi dekat
-    var startX = W / 2;
+    var startX = W / 2;     // akan dihitung ulang dari slider posisi
 
     // Kecepatan piksel per detik (biar animasinya enak dilihat)
     var SKALA_JALAN = 55;
@@ -25,6 +27,7 @@ document.addEventListener("DOMContentLoaded", function () {
     var perahu = { x: startX, y: tepiBawah };
     var jejak = [];      // titik-titik jalur perahu
     var waktuJeda = 0;   // jeda sebelum perahu menyeberang lagi
+    var arahSebelumnya = 1; // arah posisi slider saat perahu berangkat
 
     function gambarPanah(x1, y1, x2, y2, warna, tebal) {
         var sudut = Math.atan2(y2 - y1, x2 - x1);
@@ -76,7 +79,8 @@ document.addEventListener("DOMContentLoaded", function () {
         ctx.stroke();
     }
 
-    function resetPerahu() {
+    function resetPerahu(posisiSlider) {
+        arahSebelumnya = posisiSlider;
         perahu.x = startX;
         perahu.y = tepiBawah;
         jejak = [];
@@ -93,7 +97,17 @@ document.addEventListener("DOMContentLoaded", function () {
         var vDayung = parseFloat(elDayung.value);
         var vArus = parseFloat(elArus.value);
 
-        // Update label slider
+        // Posisi awal perahu dari slider (0 = kiri, 100 = kanan)
+        var persenPosisi = parseFloat(elPosisi.value);
+        startX = 80 + (persenPosisi / 100) * (W - 160);
+
+        // Label posisi
+        var labelPosisi = "Tengah";
+        if (persenPosisi < 35) labelPosisi = "Kiri";
+        else if (persenPosisi > 65) labelPosisi = "Kanan";
+        posisiVal.textContent = labelPosisi;
+
+        // Update label slider kecepatan
         dayungVal.textContent = vDayung.toFixed(1) + " m/s";
         arusVal.textContent = vArus.toFixed(1) + " m/s";
 
@@ -104,6 +118,12 @@ document.addEventListener("DOMContentLoaded", function () {
         vVal.textContent = vTotal.toFixed(1) + " m/s";
         var sudut = Math.atan2(vArus, vDayung) * 180 / Math.PI;
         thetaVal.textContent = sudut.toFixed(0) + "°";
+
+        // Kalau posisi slider diubah saat perahu sedang di tengah jalan,
+        // ulangi perjalanan dari posisi baru (supaya tidak melompat aneh)
+        if (persenPosisi !== arahSebelumnya && waktuJeda <= 0) {
+            resetPerahu(persenPosisi);
+        }
 
         // Gerakkan perahu (atas = menyeberang, kanan = terseret arus)
         if (waktuJeda > 0) {
@@ -118,7 +138,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 perahu.y = tepiAtas;
                 jejak.push({ x: perahu.x, y: perahu.y });
                 waktuJeda = 1.5;
-                setTimeout(resetPerahu, 1500);
+                setTimeout(function () { resetPerahu(parseFloat(elPosisi.value)); }, 1500);
             }
         }
 
@@ -162,10 +182,10 @@ document.addEventListener("DOMContentLoaded", function () {
         ctx.lineTo(W, tepiBawah + 20);
         ctx.stroke();
 
-        // Titik berangkat (penanda)
+        // Label berangkat
         ctx.fillStyle = "#243247";
         ctx.font = "12px Inter, sans-serif";
-        ctx.fillText("Berangkat", startX - 26, tepiBawah + 40);
+        ctx.fillText("Berangkat", startX - 26, tepiBawah + 42);
 
         // Jalur perahu (jejak putus-putus)
         if (jejak.length > 1) {
@@ -173,8 +193,9 @@ document.addEventListener("DOMContentLoaded", function () {
             ctx.lineWidth = 2;
             ctx.setLineDash([5, 5]);
             ctx.beginPath();
-            ctx.moveTo(startX, tepiBawah);
-            for (var j = 0; j < jejak.length; j++) {
+            ctx.moveTo(arahSebelumnya === persenPosisi ? jejak[0].x : startX, tepiBawah);
+            ctx.moveTo(jejak[0].x, jejak[0].y);
+            for (var j = 1; j < jejak.length; j++) {
                 ctx.lineTo(jejak[j].x, jejak[j].y);
             }
             ctx.stroke();
