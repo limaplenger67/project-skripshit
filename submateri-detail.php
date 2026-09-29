@@ -42,6 +42,10 @@ mysqli_stmt_close($stmtPrev);
 $stmtNext = mysqli_prepare($conn, "SELECT id, judul, bab FROM submateri
                                    WHERE materi_id = ? AND status_publikasi = 'publik' AND urutan > ?
                                    ORDER BY urutan ASC LIMIT 1");
+mysqli_stmt_bind_param($stmtNext, "ii", $materiId, $submateri["urutan"]);
+mysqli_stmt_execute($stmtNext);
+$nextSub = mysqli_fetch_assoc(mysqli_stmt_get_result($stmtNext));
+mysqli_stmt_close($stmtNext);
 // Cek posisi submateri dalam kelompok bab (A/B/C)
 $babSekarang = !empty($submateri["bab"]) ? $submateri["bab"] : null;
 $namaBab = [
@@ -65,11 +69,6 @@ if ($babSekarang !== null) {
         $isSubmateriTerakhir = true;
     }
 }
-mysqli_stmt_bind_param($stmtNext, "ii", $materiId, $submateri["urutan"]);
-mysqli_stmt_execute($stmtNext);
-$nextSub = mysqli_fetch_assoc(mysqli_stmt_get_result($stmtNext));
-mysqli_stmt_close($stmtNext);
-
 $pageTitle = $submateri["judul"];
 
 require_once "includes/head.php";
