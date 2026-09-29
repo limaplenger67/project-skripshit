@@ -122,9 +122,7 @@ require_once "includes/head.php";
         }
         ?>
     <?php endif; 
-    
-    ?>
-    <?php if (!empty($submateri["media"])): ?>
+        <?php if (!empty($submateri["media"])): ?>
         <section class="mt-8 rounded-2xl border border-darktext/10 bg-white p-6 sm:p-8">
             <h2 class="font-heading text-lg font-bold text-navy">Materi Visual</h2>
             <?php
@@ -145,6 +143,7 @@ require_once "includes/head.php";
             <?php endif; ?>
         </section>
     <?php endif; ?>
+    ?>
     
     <!-- Navigasi sebelumnya / berikutnya -->
     <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-between">
