@@ -143,7 +143,6 @@ require_once "includes/head.php";
             <?php endif; ?>
         </section>
     <?php endif; ?>
-    ?>
     
     <!-- Navigasi sebelumnya / berikutnya -->
     <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-between">
