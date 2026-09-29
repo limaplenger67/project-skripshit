@@ -39,36 +39,14 @@ $prevSub = mysqli_fetch_assoc(mysqli_stmt_get_result($stmtPrev));
 mysqli_stmt_close($stmtPrev);
 
 // Ambil submateri berikutnya
-$stmtNext = mysqli_prepare($conn, "SELECT id, judul, bab FROM submateri
+$stmtNext = mysqli_prepare($conn, "SELECT id, judul FROM submateri
                                    WHERE materi_id = ? AND status_publikasi = 'publik' AND urutan > ?
                                    ORDER BY urutan ASC LIMIT 1");
 mysqli_stmt_bind_param($stmtNext, "ii", $materiId, $submateri["urutan"]);
 mysqli_stmt_execute($stmtNext);
 $nextSub = mysqli_fetch_assoc(mysqli_stmt_get_result($stmtNext));
 mysqli_stmt_close($stmtNext);
-// Cek posisi submateri dalam kelompok bab (A/B/C)
-$babSekarang = !empty($submateri["bab"]) ? $submateri["bab"] : null;
-$namaBab = [
-    "A" => "Konsep Vektor",
-    "B" => "Representasi Vektor",
-    "C" => "Operasi Vektor"
-];
 
-$isAkhirBab = false;
-$isSubmateriTerakhir = false;
-$judulBabBerikutnya = "";
-
-if ($babSekarang !== null) {
-    if ($nextSub && isset($nextSub["bab"]) && $nextSub["bab"] !== $babSekarang) {
-        $isAkhirBab = true;
-        $judulBabBerikutnya = isset($namaBab[$nextSub["bab"]])
-            ? "Bagian " . $nextSub["bab"] . " · " . $namaBab[$nextSub["bab"]]
-            : "Bagian " . $nextSub["bab"];
-    }
-    if (!$nextSub) {
-        $isSubmateriTerakhir = true;
-    }
-}
 $pageTitle = $submateri["judul"];
 
 require_once "includes/head.php";
@@ -122,7 +100,9 @@ require_once "includes/head.php";
         }
         ?>
     <?php endif; 
-        <?php if (!empty($submateri["media"])): ?>
+    
+    ?>
+    <?php if (!empty($submateri["media"])): ?>
         <section class="mt-8 rounded-2xl border border-darktext/10 bg-white p-6 sm:p-8">
             <h2 class="font-heading text-lg font-bold text-navy">Materi Visual</h2>
             <?php
