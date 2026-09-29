@@ -113,47 +113,72 @@ require_once "includes/head.php";
         </div>
     </section>
 
-    <!-- Daftar submateri -->
-    <section class="py-12 lg:py-16">
-       <?php if (mysqli_num_rows($submateriList) > 0): ?>
-    <?php
-    // Kumpulkan dulu semua baris supaya bisa dikelompokkan per bab
-    $submateriRows = [];
-    while ($row = mysqli_fetch_assoc($submateriList)) {
-        $submateriRows[] = $row;
-    }
-    $urutan = 1;
-    $babAktif = null;
-    $namaBab = [
-        "A" => "A. Konsep Vektor",
-        "B" => "B. Representasi Vektor",
-        "C" => "C. Operasi Vektor"
-    ];
-    ?>
-    <?php foreach ($submateriRows as $sub): ?>
-        <?php if ($sub["bab"] !== $babAktif): ?>
-            <?php $babAktif = $sub["bab"]; ?>
-            <h3 class="mt-6 font-heading text-sm font-bold uppercase tracking-wide text-blue">
-                <?php echo isset($namaBab[$babAktif]) ? $namaBab[$babAktif] : "Bagian " . htmlspecialchars($babAktif); ?>
-            </h3>
-        <?php endif; ?>
-        <a href="submateri-detail.php?id=<?php echo $sub["id"]; ?>"
-            class="group flex items-center gap-4 rounded-2xl border border-darktext/10 bg-white p-4 transition-shadow hover:shadow-lg hover:shadow-navy/10">
-            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-lightblue font-heading text-sm font-bold text-navy">
-                <?php echo $urutan++; ?>
-            </span>
-            <span class="flex-1 font-heading text-sm font-semibold text-darktext sm:text-base">
-                <?php echo $sub["judul"]; ?>
-            </span>
-            <svg class="shrink-0 text-darktext/40 transition-colors group-hover:text-navy" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
-        </a>
-    <?php endforeach; ?>
-<?php else: ?>
-    <div class="rounded-2xl border border-darktext/10 bg-white p-8 text-center text-darktext/60">
-        Submateri untuk materi ini belum tersedia.
-    </div>
-<?php endif; ?>
-    </section>
-</main>
+        <!-- Daftar submateri -->
+    <section class="py-10 lg:py-14">
+        <div class="mx-auto max-w-4xl px-4 sm:px-6">
+            <h2 class="font-heading text-xl font-bold text-navy">Daftar Submateri</h2>
 
-<?php require_once "includes/footer.php"; ?>
+            <div class="mt-5 flex flex-col gap-3">
+                <?php if (mysqli_num_rows($submateriList) > 0): ?>
+                    <?php
+                    // Kumpulkan dulu semua baris supaya bisa dikelompokkan per bab
+                    $submateriRows = [];
+                    while ($row = mysqli_fetch_assoc($submateriList)) {
+                        $submateriRows[] = $row;
+                    }
+                    $urutan = 1;
+                    $babAktif = null;
+                    $namaBab = [
+                        "A" => "Konsep Vektor",
+                        "B" => "Representasi Vektor",
+                        "C" => "Operasi Vektor"
+                    ];
+                    ?>
+                    <?php foreach ($submateriRows as $sub): ?>
+                        <?php if (!empty($sub["bab"]) && $sub["bab"] !== $babAktif): ?>
+                            <?php $babAktif = $sub["bab"]; ?>
+                            <h3 class="mt-3 first:mt-0 font-heading text-xs font-bold uppercase tracking-wide text-blue sm:text-sm">
+                                Bagian <?php echo $babAktif; ?> · <?php echo $namaBab[$babAktif] ?? "Bagian " . htmlspecialchars($babAktif); ?>
+                            </h3>
+                        <?php endif; ?>
+                        <a href="submateri-detail.php?id=<?php echo $sub["id"]; ?>"
+                            class="group flex items-center gap-3 rounded-2xl border border-darktext/10 bg-white p-3.5 transition-shadow hover:shadow-lg hover:shadow-navy/10 sm:gap-4 sm:p-4">
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-lightblue font-heading text-sm font-bold text-navy sm:h-10 sm:w-10">
+                                <?php echo $urutan++; ?>
+                            </span>
+                            <span class="flex-1 font-heading text-sm font-semibold text-darktext sm:text-base">
+                                <?php echo $sub["judul"]; ?>
+                            </span>
+                            <svg class="shrink-0 text-darktext/40 transition-colors group-hover:text-navy" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                        </a>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <div class="rounded-2xl border border-darktext/10 bg-white p-8 text-center text-darktext/60">
+                        Submateri untuk materi ini belum tersedia.
+                    </div>
+                <?php endif; ?>
+            </div>
+
+            <!-- Aksi lanjutan -->
+            <div class="mt-8 grid gap-4 sm:grid-cols-2">
+                <div class="rounded-2xl border border-darktext/10 bg-lightblue p-5">
+                    <h3 class="font-heading text-sm font-semibold text-navy">Latihan Soal</h3>
+                    <p class="mt-1 text-sm text-darktext/70">
+                        Uji pemahamanmu dengan <?php echo (int) $jumlahSoal; ?> soal latihan.
+                    </p>
+                    <span class="mt-3 inline-block rounded-full bg-navy/10 px-4 py-1.5 text-xs font-semibold text-navy/70">
+                        Segera hadir
+                    </span>
+                </div>
+                <div class="rounded-2xl border border-darktext/10 bg-lavender p-5">
+                    <h3 class="font-heading text-sm font-semibold text-navy">Tanya PhyBot</h3>
+                    <p class="mt-1 text-sm text-darktext/70">
+                        Bingung dengan materi ini? Tanyakan langsung ke PhyBot.
+                    </p>
+                    <span class="mt-3 inline-block rounded-full bg-navy/10 px-4 py-1.5 text-xs font-semibold text-navy/70">
+                        Segera hadir
+                    </span>
+                </div>
+            </div>
+        </div>
+    </section>
