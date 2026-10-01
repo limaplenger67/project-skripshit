@@ -122,28 +122,7 @@ require_once "includes/head.php";
                     class="mt-4 w-full rounded-xl border border-darktext/15" />
             <?php endif; ?>
         </section>
-    <?php endif; ?>
-        <?php if (!empty($submateri["media"])): ?>
-        <section class="mt-8 rounded-2xl border border-darktext/10 bg-white p-6 sm:p-8">
-            <h2 class="font-heading text-lg font-bold text-navy">Materi Visual</h2>
-            <?php
-            $ekstensi = strtolower(pathinfo($submateri["media"], PATHINFO_EXTENSION));
-            if ($ekstensi === "pdf"):
-            ?>
-                <iframe src="<?php echo $submateri["media"]; ?>"
-                    class="mt-4 h-[480px] w-full rounded-xl border border-darktext/15"
-                    title="Materi visual PDF"></iframe>
-            <?php elseif ($ekstensi === "mp4"): ?>
-                <video controls class="mt-4 w-full rounded-xl border border-darktext/15">
-                    <source src="<?php echo $submateri["media"]; ?>" type="video/mp4">
-                    Browser kamu tidak mendukung pemutar video.
-                </video>
-            <?php else: ?>
-                <img src="<?php echo $submateri["media"]; ?>" alt="Materi visual"
-                    class="mt-4 w-full rounded-xl border border-darktext/15" />
-            <?php endif; ?>
-        </section>
-    <?php endif; ?>
+    
     <!-- Navigasi sebelumnya / berikutnya -->
     <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-between">
         <?php if ($prevSub): ?>
