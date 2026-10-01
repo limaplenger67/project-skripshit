@@ -122,7 +122,8 @@ require_once "includes/head.php";
                     class="mt-4 w-full rounded-xl border border-darktext/15" />
             <?php endif; ?>
         </section>
-    
+    <?php endif; ?>
+        
     <!-- Navigasi sebelumnya / berikutnya -->
     <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-between">
         <?php if ($prevSub): ?>
