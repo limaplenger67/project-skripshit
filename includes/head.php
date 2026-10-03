@@ -14,7 +14,18 @@ $pageTitle = isset($pageTitle) ? $pageTitle : "PhyZone";
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet" />
 
     <script src="https://cdn.tailwindcss.com"></script>
+    
     <script>
+    window.MathJax = {
+        tex: {
+            inlineMath: [["\\(", "\\)"]],
+            displayMath: [["\\[", "\\]"]]
+        }
+    };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+   
+   <script>
         tailwind.config = {
             theme: {
                 extend: {
