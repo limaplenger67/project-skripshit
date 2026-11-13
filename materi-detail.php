@@ -79,19 +79,7 @@ require_once "includes/head.php";
                 <?php if ($isVektor): ?>
                    <img src="assets/images/vektor-illustration.png">
                 <?php else: ?>
-                    <svg viewBox="0 0 200 150" fill="none" xmlns="http://www.w3.org/2000/svg" class="h-auto w-full max-w-sm" aria-hidden="true">
-                        <rect x="8" y="8" width="184" height="134" rx="16" fill="#E9E4FF"/>
-                        <ellipse cx="95" cy="80" rx="48" ry="38" fill="#3F7FD9"/>
-                        <ellipse cx="95" cy="80" rx="48" ry="38" stroke="#173A70" stroke-width="2.5" fill="none"/>
-                        <ellipse cx="95" cy="80" rx="14" ry="11" fill="#173A70"/>
-                        <ellipse cx="95" cy="80" rx="6" ry="5" fill="#F8C95B"/>
-                        <path d="M40 55a55 42 0 0 1 30-24" stroke="#F8C95B" stroke-width="4" stroke-linecap="round" fill="none"/>
-                        <path d="M70 31l-12 1 7-11 5 10Z" fill="#F8C95B"/>
-                        <line x1="95" y1="80" x2="160" y2="40" stroke="#173A70" stroke-width="3.5" stroke-linecap="round"/>
-                        <path d="M160 40l-13 1 8-11 5 10Z" fill="#173A70"/>
-                        <text x="166" y="36" fill="#173A70" font-size="16" font-style="italic" font-family="Georgia, serif">F</text>
-                        <text x="125" y="120" fill="#173A70" font-size="15" font-style="italic" font-family="Georgia, serif">τ = r × F</text>
-                    </svg>
+                   <img src="assets/images/rotasi-illustration.png">
                 <?php endif; ?>
             </div>
         </div>
