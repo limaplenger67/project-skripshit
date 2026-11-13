@@ -21,9 +21,6 @@ $id = (int) $_GET["id"];
 // ==========================================
 // AMBIL DATA SUBMATERI
 // ==========================================
-<a href="latihan-soal.php?id=<?= (int)$submateri['id'] ?>">
-    Latihan Soal
-</a>
 
 $stmt = mysqli_prepare(
     $conn,
