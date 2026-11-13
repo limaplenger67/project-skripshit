@@ -277,15 +277,19 @@ require_once "includes/head.php";
 
                         </div>
 
-                        <!-- Tombol ulangi -->
-                        <div class="mt-4 flex justify-end">
+                        <div class="mt-4 flex justify-end gap-4">
 
-                            <a href="latihan.php?materi_id=<?= (int) $item["materi_id"] ?>&bagian=<?= e($item["bagian"]) ?>"
-                               class="text-sm text-blue-700 hover:text-blue-900 font-semibold">
-                                Kerjakan Lagi →
-                            </a>
+    <a href="detail_riwayat.php?id=<?= (int) $item["id"] ?>"
+       class="text-sm text-blue-700 hover:text-blue-900 font-semibold">
+        Lihat Hasil →
+    </a>
 
-                        </div>
+    <a href="latihan.php?materi_id=<?= (int) $item["materi_id"] ?>&bagian=<?= e($item["bagian"]) ?>"
+       class="text-sm text-gray-600 hover:text-blue-700 font-semibold">
+        Kerjakan Lagi
+    </a>
+
+</div>
 
                     </div>
 
