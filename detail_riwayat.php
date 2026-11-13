@@ -1,43 +1,36 @@
-<?php
-$pageTitle = "Detail Hasil Latihan";
 
+<?php
 require_once "config/database.php";
 require_once "includes/auth.php";
+require_once "includes/feedback_latihan.php";
 
 requireLogin();
 
 function e($value) {
-    return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
+    return htmlspecialchars((string) $value, ENT_QUOTES, "UTF-8");
 }
 
+// Ambil ID hasil latihan
+$hasilId = (int) ($_GET["id"] ?? 0);
 $siswaId = (int) $_SESSION["siswa_id"];
-$hasilId = isset($_GET["id"]) ? (int) $_GET["id"] : 0;
 
 if ($hasilId <= 0) {
     header("Location: riwayat_latihan.php");
     exit;
 }
 
-// Ambil data hasil latihan milik siswa yang sedang login
-$queryHasil = "
-    SELECT
-        h.id,
-        h.materi_id,
-        h.bagian,
-        h.jumlah_benar,
-        h.jumlah_salah,
-        h.nilai,
-        h.created_at,
-        m.judul
-    FROM hasil_latihan h
-    INNER JOIN materi m ON h.materi_id = m.id
-    WHERE h.id = ?
-      AND h.siswa_id = ?
-      AND m.judul = 'Vektor'
-    LIMIT 1
-";
+// Ambil hasil latihan milik siswa yang sedang login
+$stmtHasil = mysqli_prepare(
+    $conn,
+    "SELECT h.*, m.judul, m.kelas
+     FROM hasil_latihan h
+     JOIN materi m ON m.id = h.materi_id
+     WHERE h.id = ?
+     AND h.siswa_id = ?
+     AND m.judul = 'Vektor'
+     LIMIT 1"
+);
 
-$stmtHasil = mysqli_prepare($conn, $queryHasil);
 mysqli_stmt_bind_param($stmtHasil, "ii", $hasilId, $siswaId);
 mysqli_stmt_execute($stmtHasil);
 
@@ -47,19 +40,19 @@ $hasil = mysqli_fetch_assoc($resultHasil);
 mysqli_stmt_close($stmtHasil);
 
 if (!$hasil) {
-    http_response_code(404);
-    die("Riwayat latihan tidak ditemukan atau kamu tidak memiliki akses.");
+    exit("Data hasil latihan tidak ditemukan atau tidak dapat diakses.");
 }
 
-// Tentukan jenis latihan
-$isEsai = ($hasil["bagian"] === "ESAI");
-
-// Ambil detail jawaban
-$queryDetail = "
-    SELECT
+// Ambil jawaban siswa beserta data soal
+$stmtJawaban = mysqli_prepare(
+    $conn,
+    "SELECT
+        js.id AS jawaban_id,
         js.jawaban,
         js.status_benar,
         s.id AS soal_id,
+        s.bagian,
+        s.jenis_soal,
         s.pertanyaan,
         s.pilihan_a,
         s.pilihan_b,
@@ -68,207 +61,218 @@ $queryDetail = "
         s.jawaban_benar,
         s.pembahasan,
         s.kunci_esai
-    FROM jawaban_siswa js
-    INNER JOIN soal s ON js.soal_id = s.id
-    WHERE js.hasil_id = ?
-    ORDER BY s.id ASC
-";
+     FROM jawaban_siswa js
+     JOIN soal s ON s.id = js.soal_id
+     WHERE js.hasil_id = ?
+     ORDER BY s.id ASC"
+);
 
-$stmtDetail = mysqli_prepare($conn, $queryDetail);
-mysqli_stmt_bind_param($stmtDetail, "i", $hasilId);
-mysqli_stmt_execute($stmtDetail);
+mysqli_stmt_bind_param($stmtJawaban, "i", $hasilId);
+mysqli_stmt_execute($stmtJawaban);
 
-$resultDetail = mysqli_stmt_get_result($stmtDetail);
+$resultJawaban = mysqli_stmt_get_result($stmtJawaban);
 
-$daftarDetail = [];
+$daftarJawaban = [];
 
-while ($row = mysqli_fetch_assoc($resultDetail)) {
-    $daftarDetail[] = $row;
+while ($row = mysqli_fetch_assoc($resultJawaban)) {
+    $daftarJawaban[] = $row;
 }
 
-mysqli_stmt_close($stmtDetail);
+mysqli_stmt_close($stmtJawaban);
 
-$totalSoal = count($daftarDetail);
+$isEsai = ($hasil["bagian"] === "ESAI");
+$totalSoal = count($daftarJawaban);
 
+// Siapkan umpan balik untuk latihan pilihan ganda
+if (!$isEsai) {
+    $feedback = getFeedbackLatihan($hasil["nilai"]);
+}
+
+$pageTitle = "Detail Hasil Latihan";
 require_once "includes/head.php";
 ?>
 
-<body class="bg-warmwhite min-h-screen">
+<body class="bg-warmwhite text-darktext">
 
 <?php require_once "includes/navbar.php"; ?>
 
-<main class="max-w-5xl mx-auto px-4 py-8">
+<main class="max-w-5xl mx-auto px-4 py-10">
 
-    <!-- Navigasi kembali -->
-    <a href="riwayat_latihan.php"
-       class="inline-flex items-center gap-2 text-sm text-blue-700 hover:text-blue-900 font-semibold mb-6">
-        ← Kembali ke Riwayat Latihan
-    </a>
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8">
 
-    <!-- Header -->
-    <div class="mb-7">
-        <span class="inline-block bg-blue-100 text-blue-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-3">
-            Detail Pengerjaan
-        </span>
+        <div class="mb-8">
 
-        <h1 class="text-3xl font-bold text-darktext mb-2">
-            <?= $isEsai ? "Hasil Latihan Esai" : "Hasil Latihan Bagian " . e($hasil["bagian"]) ?>
-        </h1>
+            <a href="riwayat_latihan.php"
+               class="inline-flex items-center text-sm text-blue-700 hover:text-blue-900 font-semibold mb-5">
+                ← Kembali ke Riwayat Latihan
+            </a>
 
-        <p class="text-gray-500 text-sm">
-            Materi <?= e($hasil["judul"]) ?> ·
-            <?= date("d M Y, H:i", strtotime($hasil["created_at"])) ?>
-        </p>
-    </div>
+            <h1 class="text-2xl md:text-3xl font-bold text-darktext">
+                Detail Hasil Latihan
+            </h1>
 
-    <!-- Ringkasan hasil -->
-    <div class="bg-white border border-gray-100 shadow-sm rounded-2xl p-6 mb-8">
+            <p class="text-gray-500 mt-2">
+                Materi Vektor - Bagian <?= e($hasil["bagian"]) ?>
+            </p>
+
+            <p class="text-sm text-gray-400 mt-1">
+                Dikerjakan pada
+                <?= date("d-m-Y H:i", strtotime($hasil["created_at"])) ?>
+            </p>
+
+        </div>
 
         <?php if (!$isEsai): ?>
 
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="bg-blue-50 border border-blue-100 rounded-2xl p-6 mb-8">
 
-                <div class="bg-blue-50 rounded-xl p-4 text-center">
-                    <p class="text-sm text-blue-700 mb-1">Nilai</p>
-                    <p class="text-3xl font-bold text-blue-800">
-                        <?= number_format((float) $hasil["nilai"], 0) ?>
-                    </p>
+                <p class="text-center text-sm text-gray-600 mb-2">
+                    Nilai Latihan
+                </p>
+
+                <div class="text-center text-5xl font-bold text-blue-700 mb-6">
+                    <?= number_format((float) $hasil["nilai"], 0) ?>
                 </div>
 
-                <div class="bg-green-50 rounded-xl p-4 text-center">
-                    <p class="text-sm text-green-700 mb-1">Benar</p>
-                    <p class="text-3xl font-bold text-green-700">
-                        <?= (int) $hasil["jumlah_benar"] ?>
-                    </p>
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-center">
+
+                    <div class="bg-white rounded-xl p-4">
+                        <p class="text-sm text-gray-500">Jumlah Soal</p>
+                        <p class="text-2xl font-bold text-darktext">
+                            <?= $totalSoal ?>
+                        </p>
+                    </div>
+
+                    <div class="bg-white rounded-xl p-4">
+                        <p class="text-sm text-gray-500">Jawaban Benar</p>
+                        <p class="text-2xl font-bold text-green-600">
+                            <?= (int) $hasil["jumlah_benar"] ?>
+                        </p>
+                    </div>
+
+                    <div class="bg-white rounded-xl p-4 col-span-2 md:col-span-1">
+                        <p class="text-sm text-gray-500">Jawaban Salah</p>
+                        <p class="text-2xl font-bold text-red-500">
+                            <?= (int) $hasil["jumlah_salah"] ?>
+                        </p>
+                    </div>
+
                 </div>
 
-                <div class="bg-red-50 rounded-xl p-4 text-center">
-                    <p class="text-sm text-red-700 mb-1">Salah</p>
-                    <p class="text-3xl font-bold text-red-700">
-                        <?= (int) $hasil["jumlah_salah"] ?>
-                    </p>
-                </div>
+                <?php $warnaFeedback = [
+                    "green" => "bg-green-50 border-green-200",
+                    "yellow" => "bg-yellow-50 border-yellow-200",
+                    "red" => "bg-red-50 border-red-200"
+                ]; ?>
 
-                <div class="bg-gray-50 rounded-xl p-4 text-center">
-                    <p class="text-sm text-gray-600 mb-1">Total Soal</p>
-                    <p class="text-3xl font-bold text-darktext">
-                        <?= $totalSoal ?>
+                <div class="mt-6 p-4 rounded-xl border <?= $warnaFeedback[$feedback["warna"]] ?? "bg-gray-50 border-gray-200" ?>">
+
+                    <h3 class="font-bold text-darktext mb-2">
+                        Umpan Balik: <?= e($feedback["kategori"]) ?>
+                    </h3>
+
+                    <p class="text-sm text-gray-700 leading-relaxed mb-2">
+                        <?= e($feedback["pesan"]) ?>
                     </p>
+
+                    <p class="text-sm text-gray-600 leading-relaxed">
+                        <strong>Saran belajar:</strong>
+                        <?= e($feedback["saran"]) ?>
+                    </p>
+
                 </div>
 
             </div>
 
         <?php else: ?>
 
-            <div class="text-center py-3">
-                <div class="w-14 h-14 bg-purple-100 text-purple-700 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <span class="text-2xl">✓</span>
-                </div>
+            <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-5 mb-8">
 
-                <h2 class="font-bold text-xl text-darktext mb-2">
-                    Jawaban Esai Tersimpan
+                <h2 class="font-bold text-yellow-800 mb-2">
+                    Latihan Esai
                 </h2>
 
-                <p class="text-sm text-gray-600">
-                    Kamu telah mengerjakan <?= $totalSoal ?> soal esai.
-                    Penilaian dilakukan secara mandiri menggunakan pedoman jawaban.
+                <p class="text-sm text-yellow-800 leading-relaxed">
+                    Latihan esai tidak memiliki nilai otomatis.
+                    Periksa jawabanmu dengan membandingkannya terhadap
+                    pedoman jawaban yang tersedia di bawah ini.
                 </p>
+
+                <p class="text-sm text-yellow-800 mt-2">
+                    Jumlah soal yang tersimpan: <?= $totalSoal ?>
+                </p>
+
             </div>
 
         <?php endif; ?>
 
-    </div>
+        <div class="space-y-6">
 
-    <!-- Daftar jawaban -->
-    <div class="mb-6">
-        <h2 class="text-xl font-bold text-darktext mb-5">
-            <?= $isEsai ? "Jawaban dan Pedoman Evaluasi" : "Detail Jawaban dan Pembahasan" ?>
-        </h2>
+            <h2 class="text-xl font-bold text-darktext border-b pb-3">
+                <?= $isEsai ? "Jawaban dan Pedoman Jawaban" : "Pembahasan Soal" ?>
+            </h2>
 
-        <?php if (empty($daftarDetail)): ?>
+            <?php if (empty($daftarJawaban)): ?>
 
-            <div class="bg-white border border-gray-100 rounded-xl p-8 text-center">
-                <p class="text-gray-500">
-                    Detail jawaban belum tersedia.
-                </p>
-            </div>
+                <div class="bg-gray-50 rounded-xl p-5 text-center text-gray-500">
+                    Belum ada jawaban yang tersimpan untuk latihan ini.
+                </div>
 
-        <?php else: ?>
+            <?php else: ?>
 
-            <div class="space-y-5">
-
-                <?php foreach ($daftarDetail as $index => $detail): ?>
+                <?php foreach ($daftarJawaban as $index => $item): ?>
 
                     <?php
-                    $pilihan = [
-                        "a" => $detail["pilihan_a"],
-                        "b" => $detail["pilihan_b"],
-                        "c" => $detail["pilihan_c"],
-                        "d" => $detail["pilihan_d"]
-                    ];
-
-                    $jawabanUser = strtolower(trim($detail["jawaban"] ?? ""));
-                    $jawabanBenar = $detail["jawaban_benar"];
-                    $statusBenar = (int) $detail["status_benar"] === 1;
+                    $jawabanPengguna = (string) ($item["jawaban"] ?? "");
+                    $jawabanBenar = strtolower((string) ($item["jawaban_benar"] ?? ""));
+                    $benar = ($item["status_benar"] !== null)
+                        ? ((int) $item["status_benar"] === 1)
+                        : false;
                     ?>
 
-                    <div class="bg-white border border-gray-100 shadow-sm rounded-2xl p-5">
+                    <div class="border border-gray-200 rounded-xl p-5">
 
-                        <!-- Nomor soal dan status -->
-                        <div class="flex items-center justify-between gap-3 mb-4">
+                        <div class="flex items-start gap-3 mb-4">
 
-                            <h3 class="font-bold text-darktext">
-                                Soal <?= $index + 1 ?>
-                            </h3>
+                            <span class="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold">
+                                <?= $index + 1 ?>
+                            </span>
 
-                            <?php if (!$isEsai): ?>
+                            <div class="font-semibold text-darktext leading-relaxed">
+                                <?= nl2br(e($item["pertanyaan"])) ?>
+                            </div>
 
-                                <?php if ($statusBenar): ?>
-                                    <span class="bg-green-100 text-green-700 text-xs font-semibold px-3 py-1.5 rounded-full">
-                                        Benar
-                                    </span>
-                                <?php else: ?>
-                                    <span class="bg-red-100 text-red-700 text-xs font-semibold px-3 py-1.5 rounded-full">
-                                        Salah
-                                    </span>
-                                <?php endif; ?>
-
-                            <?php else: ?>
-
-                                <span class="bg-purple-100 text-purple-700 text-xs font-semibold px-3 py-1.5 rounded-full">
-                                    Esai
-                                </span>
-
-                            <?php endif; ?>
-
-                        </div>
-
-                        <!-- Pertanyaan -->
-                        <div class="text-gray-800 leading-relaxed mb-5">
-                            <?= nl2br(e($detail["pertanyaan"])) ?>
                         </div>
 
                         <?php if (!$isEsai): ?>
 
-                            <!-- Pilihan jawaban -->
-                            <div class="space-y-2 mb-5">
+                            <?php
+                            $pilihan = [
+                                "a" => $item["pilihan_a"],
+                                "b" => $item["pilihan_b"],
+                                "c" => $item["pilihan_c"],
+                                "d" => $item["pilihan_d"]
+                            ];
+                            ?>
+
+                            <div class="space-y-2 mb-4">
 
                                 <?php foreach ($pilihan as $huruf => $isi): ?>
 
                                     <?php
-                                    $isBenar = ($huruf === $jawabanBenar);
-                                    $isPilihanSiswa = ($huruf === $jawabanUser);
+                                    $terpilih = (strtolower($jawabanPengguna) === $huruf);
+                                    $adalahBenar = ($jawabanBenar === $huruf);
 
-                                    $kelas = "border-gray-200 bg-white";
+                                    $kelasPilihan = "border-gray-200 bg-white";
 
-                                    if ($isBenar) {
-                                        $kelas = "border-green-300 bg-green-50";
-                                    } elseif ($isPilihanSiswa) {
-                                        $kelas = "border-red-300 bg-red-50";
+                                    if ($adalahBenar) {
+                                        $kelasPilihan = "border-green-300 bg-green-50";
+                                    } elseif ($terpilih && !$adalahBenar) {
+                                        $kelasPilihan = "border-red-300 bg-red-50";
                                     }
                                     ?>
 
-                                    <div class="border rounded-xl p-3 <?= $kelas ?>">
+                                    <div class="border rounded-lg p-3 text-sm <?= $kelasPilihan ?>">
 
                                         <span class="font-semibold uppercase">
                                             <?= e($huruf) ?>.
@@ -276,12 +280,12 @@ require_once "includes/head.php";
 
                                         <?= e($isi) ?>
 
-                                        <?php if ($isBenar): ?>
-                                            <span class="text-green-700 text-xs font-semibold ml-2">
-                                                (Kunci jawaban)
+                                        <?php if ($adalahBenar): ?>
+                                            <span class="text-green-700 font-semibold ml-2">
+                                                (Jawaban benar)
                                             </span>
-                                        <?php elseif ($isPilihanSiswa): ?>
-                                            <span class="text-red-700 text-xs font-semibold ml-2">
+                                        <?php elseif ($terpilih): ?>
+                                            <span class="text-red-600 font-semibold ml-2">
                                                 (Jawaban kamu)
                                             </span>
                                         <?php endif; ?>
@@ -292,47 +296,48 @@ require_once "includes/head.php";
 
                             </div>
 
-                            <!-- Pembahasan -->
-                            <div class="bg-blue-50 border border-blue-100 rounded-xl p-4">
+                            <div class="text-sm mb-3">
+                                <strong>Jawaban kamu:</strong>
 
-                                <p class="font-semibold text-blue-800 text-sm mb-2">
-                                    Pembahasan
+                                <span class="<?= $benar ? "text-green-700" : "text-red-600" ?>">
+                                    <?= strtoupper(e($jawabanPengguna)) ?>
+                                </span>
+                            </div>
+
+                            <div class="bg-blue-50 rounded-lg p-4 text-sm">
+
+                                <p class="font-bold text-blue-800 mb-1">
+                                    Pembahasan:
                                 </p>
 
-                                <p class="text-gray-700 text-sm leading-relaxed">
-                                    <?= !empty($detail["pembahasan"])
-                                        ? nl2br(e($detail["pembahasan"]))
-                                        : "Pembahasan belum tersedia." ?>
+                                <p class="text-gray-700 leading-relaxed">
+                                    <?= nl2br(e($item["pembahasan"] ?: "Belum ada pembahasan untuk soal ini.")) ?>
                                 </p>
 
                             </div>
 
                         <?php else: ?>
 
-                            <!-- Jawaban siswa -->
-                            <div class="bg-gray-50 rounded-xl p-4 mb-4">
+                            <div class="bg-gray-50 rounded-lg p-4 mb-3 text-sm">
 
-                                <p class="font-semibold text-gray-700 text-sm mb-2">
-                                    Jawaban Kamu
+                                <p class="font-bold text-gray-700 mb-1">
+                                    Jawaban kamu:
                                 </p>
 
-                                <p class="text-gray-600 text-sm leading-relaxed">
-                                    <?= nl2br(e($detail["jawaban"])) ?>
+                                <p class="text-gray-700 leading-relaxed">
+                                    <?= nl2br(e($jawabanPengguna)) ?>
                                 </p>
 
                             </div>
 
-                            <!-- Pedoman jawaban -->
-                            <div class="bg-blue-50 border border-blue-100 rounded-xl p-4">
+                            <div class="bg-blue-50 rounded-lg p-4 text-sm">
 
-                                <p class="font-semibold text-blue-800 text-sm mb-2">
-                                    Pedoman Jawaban
+                                <p class="font-bold text-blue-800 mb-1">
+                                    Pedoman jawaban:
                                 </p>
 
-                                <p class="text-gray-700 text-sm leading-relaxed">
-                                    <?= !empty($detail["kunci_esai"])
-                                        ? nl2br(e($detail["kunci_esai"]))
-                                        : "Pedoman jawaban belum tersedia." ?>
+                                <p class="text-gray-700 leading-relaxed">
+                                    <?= nl2br(e($item["kunci_esai"] ?: "Pedoman jawaban belum tersedia.")) ?>
                                 </p>
 
                             </div>
@@ -343,24 +348,23 @@ require_once "includes/head.php";
 
                 <?php endforeach; ?>
 
-            </div>
+            <?php endif; ?>
 
-        <?php endif; ?>
+        </div>
 
-    </div>
+        <div class="flex flex-col sm:flex-row gap-3 mt-8">
 
-    <!-- Tombol bawah -->
-    <div class="flex flex-col sm:flex-row justify-center gap-3 mt-8">
+            <a href="latihan.php?materi_id=<?= (int) $hasil["materi_id"] ?>&bagian=<?= e($hasil["bagian"]) ?>"
+               class="flex-1 text-center bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-5 rounded-xl transition">
+                Kerjakan Lagi
+            </a>
 
-        <a href="latihan.php?materi_id=<?= (int) $hasil["materi_id"] ?>&bagian=<?= e($hasil["bagian"]) ?>"
-           class="bg-blue-700 hover:bg-blue-800 text-white text-center font-semibold px-6 py-3 rounded-xl transition">
-            Kerjakan Lagi
-        </a>
+            <a href="riwayat_latihan.php"
+               class="flex-1 text-center bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-5 rounded-xl transition">
+                Kembali ke Riwayat
+            </a>
 
-        <a href="riwayat_latihan.php"
-           class="bg-white hover:bg-gray-100 border border-gray-200 text-darktext text-center font-semibold px-6 py-3 rounded-xl transition">
-            Kembali ke Riwayat
-        </a>
+        </div>
 
     </div>
 
