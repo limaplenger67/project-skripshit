@@ -77,23 +77,7 @@ require_once "includes/head.php";
 
             <div class="flex justify-center lg:justify-end">
                 <?php if ($isVektor): ?>
-                    <svg viewBox="0 0 200 150" fill="none" xmlns="http://www.w3.org/2000/svg" class="h-auto w-full max-w-sm" aria-hidden="true">
-                        <rect x="8" y="8" width="184" height="134" rx="16" fill="#DCEEFF"/>
-                        <line x1="40" y1="115" x2="175" y2="115" stroke="#173A70" stroke-width="2.5" stroke-linecap="round"/>
-                        <path d="M175 115l-9-5v10l9-5Z" fill="#173A70"/>
-                        <line x1="40" y1="115" x2="40" y2="25" stroke="#173A70" stroke-width="2.5" stroke-linecap="round"/>
-                        <path d="M40 25l-5 9h10l-5-9Z" fill="#173A70"/>
-                        <text x="180" y="128" fill="#173A70" font-size="13" font-style="italic" font-family="Georgia, serif">x</text>
-                        <text x="30" y="22" fill="#173A70" font-size="13" font-style="italic" font-family="Georgia, serif">y</text>
-                        <line x1="40" y1="115" x2="120" y2="55" stroke="#3F7FD9" stroke-width="4" stroke-linecap="round"/>
-                        <path d="M120 55l-13 2 7-11 6 9Z" fill="#3F7FD9"/>
-                        <text x="126" y="50" fill="#3F7FD9" font-size="16" font-style="italic" font-family="Georgia, serif">A</text>
-                        <line x1="40" y1="115" x2="90" y2="95" stroke="#F8C95B" stroke-width="4" stroke-linecap="round"/>
-                        <path d="M90 95l-13 4 9-10 4 6Z" fill="#F8C95B"/>
-                        <text x="97" y="92" fill="#C79A2E" font-size="16" font-style="italic" font-family="Georgia, serif">B</text>
-                        <line x1="40" y1="115" x2="155" y2="85" stroke="#243247" stroke-width="3" stroke-dasharray="6 5" stroke-linecap="round"/>
-                        <text x="148" y="75" fill="#243247" font-size="14" font-style="italic" font-family="Georgia, serif">R</text>
-                    </svg>
+                   <img src="assets/images/vektor-illustration.png">
                 <?php else: ?>
                     <svg viewBox="0 0 200 150" fill="none" xmlns="http://www.w3.org/2000/svg" class="h-auto w-full max-w-sm" aria-hidden="true">
                         <rect x="8" y="8" width="184" height="134" rx="16" fill="#E9E4FF"/>
