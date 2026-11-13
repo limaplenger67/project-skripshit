@@ -1,80 +1,231 @@
+
 <?php
+// Pastikan session dan autentikasi tersedia
 if (!isset($isLoggedIn)) {
     require_once __DIR__ . "/auth.php";
 }
 
+// Daftar navigasi
 $navItems = [
-    ["label" => "Beranda", "href" => "index.php"],
-    ["label" => "Materi", "href" => "materi.php"],
-    ["label" => "Chat AI", "href" => "chat.php"],
-    ["label" => "Tentang Kami", "href" => "index.php#tentang"]
+    [
+        "nama" => "Beranda",
+        "link" => "index.php"
+    ],
+    [
+        "nama" => "Materi",
+        "link" => "materi.php"
+    ],
+    [
+        "nama" => "Riwayat Latihan",
+        "link" => "riwayat_latihan.php"
+    ],
+    [
+        "nama" => "Chat AI",
+        "link" => "chat.php"
+    ],
+    [
+        "nama" => "Tentang Kami",
+        "link" => "index.php#tentang"
+    ]
 ];
+
+// Menentukan halaman aktif
+$currentPage = basename($_SERVER["PHP_SELF"]);
 ?>
-<header class="sticky top-0 z-50 border-b border-darktext/10 bg-warmwhite/95 backdrop-blur">
-    <nav class="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
-        <a href="index.php" class="flex items-center gap-2">
-            <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-navy text-warmwhite">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><path d="M20.2 20.2c2.04-2.03.02-7.36-4.5-11.9-4.54-4.52-9.87-6.54-11.9-4.5-2.04 2.03-.02 7.36 4.5 11.9 4.54 4.52 9.87 6.54 11.9 4.5Z"/><path d="M15.7 15.7c4.52-4.54 6.54-9.87 4.5-11.9-2.03-2.04-7.36-.02-11.9 4.5-4.52 4.54-6.54 9.87-4.5 11.9 2.03 2.04 7.36.02 11.9-4.5Z"/></svg>
-            </span>
-            <span class="font-heading text-xl font-semibold text-navy">PhyZone</span>
-        </a>
 
-        <ul class="hidden items-center gap-8 md:flex">
-            <?php foreach ($navItems as $item): ?>
-                <li>
-                    <a href="<?php echo $item['href']; ?>" class="text-sm font-medium text-darktext/80 transition-colors hover:text-navy">
-                        <?php echo $item['label']; ?>
+<nav class="bg-white shadow-sm sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+        <div class="flex justify-between items-center h-20">
+
+            <!-- Logo -->
+            <a href="index.php" class="flex items-center gap-2">
+                <div class="w-10 h-10 bg-blue-700 rounded-xl flex items-center justify-center">
+                    <span class="text-white font-bold text-xl">P</span>
+                </div>
+
+                <div>
+                    <h1 class="text-xl font-bold text-[#173A70]">
+                        PhyZone
+                    </h1>
+
+                    <p class="text-[10px] text-gray-500 -mt-1">
+                        Platform Pembelajaran Fisika SMA
+                    </p>
+                </div>
+            </a>
+
+            <!-- Navigasi Desktop -->
+            <div class="hidden lg:flex items-center gap-1">
+
+                <?php foreach ($navItems as $item): ?>
+
+                    <?php
+                    $isActive = (
+                        $currentPage === $item["link"] ||
+                        (
+                            $item["nama"] === "Tentang Kami" &&
+                            $currentPage === "index.php" &&
+                            isset($_GET["section"])
+                        )
+                    );
+                    ?>
+
+                    <a href="<?= htmlspecialchars($item["link"], ENT_QUOTES, "UTF-8") ?>"
+                       class="px-3 py-2 rounded-lg text-sm font-medium transition
+                       <?= $isActive
+                           ? 'text-blue-700 bg-blue-50'
+                           : 'text-gray-600 hover:text-blue-700 hover:bg-blue-50' ?>">
+                        <?= htmlspecialchars($item["nama"], ENT_QUOTES, "UTF-8") ?>
                     </a>
-                </li>
-            <?php endforeach; ?>
-        </ul>
 
-        <div class="hidden items-center gap-3 md:flex">
-            <?php if ($isLoggedIn): ?>
-                <span class="text-sm font-medium text-darktext/80">
-                    Halo, <span class="font-semibold text-navy"><?php echo htmlspecialchars($siswaNama); ?></span>
-                </span>
-                <a href="logout.php" class="inline-flex items-center rounded-full border-2 border-navy/20 px-5 py-2 text-sm font-semibold text-navy transition-colors hover:border-navy">
-                    Keluar
-                </a>
-            <?php else: ?>
-                <a href="login.php" class="text-sm font-semibold text-navy hover:underline">Masuk</a>
-                <a href="register.php" class="inline-flex items-center gap-2 rounded-full bg-navy px-5 py-2.5 text-sm font-semibold text-warmwhite transition-colors hover:bg-blue">
-                    Daftar
-                </a>
-            <?php endif; ?>
+                <?php endforeach; ?>
+
+            </div>
+
+            <!-- Akun Desktop -->
+            <div class="hidden lg:flex items-center gap-3">
+
+                <?php if ($isLoggedIn): ?>
+
+                    <span class="text-sm text-gray-600">
+                        Halo,
+                        <span class="font-semibold text-[#173A70]">
+                            <?= htmlspecialchars($siswaNama, ENT_QUOTES, "UTF-8") ?>
+                        </span>
+                    </span>
+
+                    <a href="logout.php"
+                       class="bg-[#173A70] hover:bg-blue-800 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition">
+                        Keluar
+                    </a>
+
+                <?php else: ?>
+
+                    <a href="login.php"
+                       class="text-sm font-semibold text-[#173A70] hover:text-blue-700 transition">
+                        Masuk
+                    </a>
+
+                    <a href="register.php"
+                       class="bg-[#173A70] hover:bg-blue-800 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition">
+                        Daftar
+                    </a>
+
+                <?php endif; ?>
+
+            </div>
+
+            <!-- Tombol Menu Mobile -->
+            <button id="menu-btn"
+                    type="button"
+                    class="lg:hidden p-2 rounded-lg text-gray-700 hover:bg-gray-100 transition"
+                    aria-label="Buka menu navigasi">
+
+                <svg id="icon-menu"
+                     xmlns="http://www.w3.org/2000/svg"
+                     class="w-6 h-6"
+                     fill="none"
+                     viewBox="0 0 24 24"
+                     stroke="currentColor"
+                     stroke-width="2">
+
+                    <path stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M4 6h16M4 12h16M4 18h16"/>
+
+                </svg>
+
+                <svg id="icon-close"
+                     xmlns="http://www.w3.org/2000/svg"
+                     class="w-6 h-6 hidden"
+                     fill="none"
+                     viewBox="0 0 24 24"
+                     stroke="currentColor"
+                     stroke-width="2">
+
+                    <path stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M6 18L18 6M6 6l12 12"/>
+
+                </svg>
+
+            </button>
+
         </div>
 
-        <button id="menu-btn" class="flex h-10 w-10 items-center justify-center rounded-lg text-navy md:hidden" aria-label="Buka menu navigasi">
-            <svg id="icon-menu" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
-            <svg id="icon-close" class="hidden" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-        </button>
-    </nav>
+        <!-- Navigasi Mobile -->
+        <div id="mobile-menu" class="hidden lg:hidden pb-5">
 
-    <div id="mobile-menu" class="hidden border-t border-darktext/10 bg-warmwhite px-4 pb-4 pt-2 md:hidden">
-        <ul class="flex flex-col gap-1">
-            <?php foreach ($navItems as $item): ?>
-                <li>
-                    <a href="<?php echo $item['href']; ?>" class="nav-link-mobile block rounded-lg px-3 py-2.5 text-sm font-medium text-darktext hover:bg-lightblue">
-                        <?php echo $item['label']; ?>
+            <div class="flex flex-col gap-1 border-t border-gray-100 pt-3">
+
+                <?php foreach ($navItems as $item): ?>
+
+                    <?php
+                    $isActive = ($currentPage === $item["link"]);
+                    ?>
+
+                    <a href="<?= htmlspecialchars($item["link"], ENT_QUOTES, "UTF-8") ?>"
+                       class="nav-link-mobile px-4 py-3 rounded-lg text-sm font-medium transition
+                       <?= $isActive
+                           ? 'text-blue-700 bg-blue-50'
+                           : 'text-gray-600 hover:text-blue-700 hover:bg-blue-50' ?>">
+
+                        <?= htmlspecialchars($item["nama"], ENT_QUOTES, "UTF-8") ?>
+
                     </a>
-                </li>
-            <?php endforeach; ?>
-        </ul>
-        <div class="mt-3 flex flex-col gap-2">
-            <?php if ($isLoggedIn): ?>
-                <p class="px-3 text-sm text-darktext/70">Halo, <span class="font-semibold text-navy"><?php echo htmlspecialchars($siswaNama); ?></span></p>
-                <a href="logout.php" class="nav-link-mobile flex items-center justify-center rounded-full border-2 border-navy/20 px-5 py-2.5 text-sm font-semibold text-navy">
-                    Keluar
-                </a>
-            <?php else: ?>
-                <a href="login.php" class="nav-link-mobile flex items-center justify-center rounded-full border-2 border-navy/20 px-5 py-2.5 text-sm font-semibold text-navy">
-                    Masuk
-                </a>
-                <a href="register.php" class="nav-link-mobile flex items-center justify-center rounded-full bg-navy px-5 py-2.5 text-sm font-semibold text-warmwhite">
-                    Daftar
-                </a>
-            <?php endif; ?>
+
+                <?php endforeach; ?>
+
+            </div>
+
+            <!-- Akun Mobile -->
+            <div class="border-t border-gray-100 mt-3 pt-4">
+
+                <?php if ($isLoggedIn): ?>
+
+                    <div class="px-4 mb-3">
+                        <p class="text-xs text-gray-500">
+                            Sedang masuk sebagai
+                        </p>
+
+                        <p class="font-semibold text-[#173A70] mt-1">
+                            <?= htmlspecialchars($siswaNama, ENT_QUOTES, "UTF-8") ?>
+                        </p>
+                    </div>
+
+                    <a href="logout.php"
+                       class="block mx-4 text-center bg-[#173A70] hover:bg-blue-800 text-white text-sm font-semibold px-5 py-3 rounded-xl transition">
+
+                        Keluar
+
+                    </a>
+
+                <?php else: ?>
+
+                    <div class="flex gap-3 px-4">
+
+                        <a href="login.php"
+                           class="flex-1 text-center border border-[#173A70] text-[#173A70] hover:bg-blue-50 text-sm font-semibold px-4 py-3 rounded-xl transition">
+
+                            Masuk
+
+                        </a>
+
+                        <a href="register.php"
+                           class="flex-1 text-center bg-[#173A70] hover:bg-blue-800 text-white text-sm font-semibold px-4 py-3 rounded-xl transition">
+
+                            Daftar
+
+                        </a>
+
+                    </div>
+
+                <?php endif; ?>
+
+            </div>
+
         </div>
+
     </div>
-</header>
+</nav>
