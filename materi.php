@@ -151,7 +151,7 @@ require_once "includes/head.php";
                                 <?php if ($isVektor): ?>
 
                                     <img
-                                        src="assets/images/vektor.png"
+                                        src="assets/images/vektor-illustration.png"
                                         alt="Ilustrasi realistis materi vektor"
                                         class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                                         onerror="this.classList.add('hidden'); this.nextElementSibling.classList.remove('hidden');"
@@ -214,7 +214,7 @@ require_once "includes/head.php";
                                 <?php else: ?>
 
                                     <img
-                                        src="assets/images/dinamika-rotasi.png"
+                                        src="assets/images/rotasi-illustration.png"
                                         alt="Ilustrasi realistis materi dinamika rotasi"
                                         class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                                         onerror="this.classList.add('hidden'); this.nextElementSibling.classList.remove('hidden');"
