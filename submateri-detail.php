@@ -1,4 +1,3 @@
-
 <?php
 $pageTitle = "Submateri";
 
@@ -7,10 +6,7 @@ require_once "includes/auth.php";
 
 requireLogin();
 
-// ==========================================
-// VALIDASI ID SUBMATERI
-// ==========================================
-
+// Validasi parameter id
 if (!isset($_GET["id"]) || !is_numeric($_GET["id"])) {
     header("Location: materi.php");
     exit;
@@ -18,28 +14,16 @@ if (!isset($_GET["id"]) || !is_numeric($_GET["id"])) {
 
 $id = (int) $_GET["id"];
 
-// ==========================================
-// AMBIL DATA SUBMATERI
-// ==========================================
-
-$stmt = mysqli_prepare(
-    $conn,
-    "SELECT s.*, 
-            m.judul AS materi_judul,
-            m.kelas,
-            m.id AS materi_id
-     FROM submateri s
-     JOIN materi m ON s.materi_id = m.id
-     WHERE s.id = ? 
-     AND s.status_publikasi = 'publik'"
-);
+// Ambil data submateri beserta data materi induknya
+$stmt = mysqli_prepare($conn, "SELECT s.*, m.judul AS materi_judul, m.kelas, m.id AS materi_id
+                               FROM submateri s
+                               JOIN materi m ON s.materi_id = m.id
+                               WHERE s.id = ? AND s.status_publikasi = 'publik'");
 
 mysqli_stmt_bind_param($stmt, "i", $id);
 mysqli_stmt_execute($stmt);
 
-$submateri = mysqli_fetch_assoc(
-    mysqli_stmt_get_result($stmt)
-);
+$submateri = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
 
 mysqli_stmt_close($stmt);
 
@@ -49,153 +33,112 @@ if (!$submateri) {
 }
 
 $materiId = (int) $submateri["materi_id"];
-$judul = trim($submateri["judul"]);
 
-$pageTitle = $judul;
+// Ambil submateri sebelumnya
+$stmtPrev = mysqli_prepare($conn, "SELECT id, judul FROM submateri
+                                   WHERE materi_id = ?
+                                   AND status_publikasi = 'publik'
+                                   AND urutan < ?
+                                   ORDER BY urutan DESC
+                                   LIMIT 1");
 
-// ==========================================
-// NAVIGASI SUBMATERI SEBELUMNYA
-// ==========================================
-
-$stmtPrev = mysqli_prepare(
-    $conn,
-    "SELECT id, judul FROM submateri
-     WHERE materi_id = ?
-     AND status_publikasi = 'publik'
-     AND urutan < ?
-     ORDER BY urutan DESC
-     LIMIT 1"
-);
-
-mysqli_stmt_bind_param(
-    $stmtPrev,
-    "ii",
-    $materiId,
-    $submateri["urutan"]
-);
-
+mysqli_stmt_bind_param($stmtPrev, "ii", $materiId, $submateri["urutan"]);
 mysqli_stmt_execute($stmtPrev);
 
-$prevSub = mysqli_fetch_assoc(
-    mysqli_stmt_get_result($stmtPrev)
-);
+$prevSub = mysqli_fetch_assoc(mysqli_stmt_get_result($stmtPrev));
 
 mysqli_stmt_close($stmtPrev);
 
-// ==========================================
-// NAVIGASI SUBMATERI BERIKUTNYA
-// ==========================================
+// Ambil submateri berikutnya
+$stmtNext = mysqli_prepare($conn, "SELECT id, judul FROM submateri
+                                   WHERE materi_id = ?
+                                   AND status_publikasi = 'publik'
+                                   AND urutan > ?
+                                   ORDER BY urutan ASC
+                                   LIMIT 1");
 
-$stmtNext = mysqli_prepare(
-    $conn,
-    "SELECT id, judul FROM submateri
-     WHERE materi_id = ?
-     AND status_publikasi = 'publik'
-     AND urutan > ?
-     ORDER BY urutan ASC
-     LIMIT 1"
-);
-
-mysqli_stmt_bind_param(
-    $stmtNext,
-    "ii",
-    $materiId,
-    $submateri["urutan"]
-);
-
+mysqli_stmt_bind_param($stmtNext, "ii", $materiId, $submateri["urutan"]);
 mysqli_stmt_execute($stmtNext);
 
-$nextSub = mysqli_fetch_assoc(
-    mysqli_stmt_get_result($stmtNext)
-);
+$nextSub = mysqli_fetch_assoc(mysqli_stmt_get_result($stmtNext));
 
 mysqli_stmt_close($stmtNext);
 
-// ==========================================
+$pageTitle = $submateri["judul"];
+
+// ======================================================
 // PERTANYAAN PEMANTIK
-// HANYA AWAL BAGIAN A, B, DAN C
-// ==========================================
+// ======================================================
 
 $pertanyaanPemantikMap = [
-
-    11 => "Pernahkah kamu melihat sebuah benda yang bergerak dari satu tempat ke tempat lain? Bagaimana cara kita menyatakan besar dan arah perpindahan benda tersebut menggunakan konsep vektor?",
-
-    14 => "Jika sebuah gaya bekerja pada suatu benda dengan arah miring, apakah seluruh gaya tersebut bekerja pada arah horizontal dan vertikal secara bersamaan? Bagaimana cara menguraikannya?",
-
-    16 => "Jika dua orang menarik sebuah benda menggunakan tali dari arah yang berbeda, bagaimana cara menentukan arah dan besar gaya gabungan yang bekerja pada benda tersebut?"
-
+    "Pengantar Dinamika Rotasi" => "Mengapa roda sepeda bisa bergerak maju sekaligus berputar ketika sepeda dikayuh?",
+    "Torsi (Momen Gaya)" => "Mengapa pintu lebih mudah dibuka jika kita mendorongnya dari bagian yang jauh dari engsel?",
+    "Torsi" => "Mengapa pintu lebih mudah dibuka jika kita mendorongnya dari bagian yang jauh dari engsel?",
+    "Momen Inersia" => "Mengapa roda lebih mudah diputar jika sebagian besar massanya berada di dekat bagian tengah roda?",
+    "Hukum Newton untuk Rotasi" => "Mengapa benda bisa berputar lebih cepat jika gaya yang diberikan lebih besar?",
+    "Energi Kinetik Rotasi" => "Mengapa roda yang berputar memiliki energi gerak?",
+    "Momentum Sudut" => "Mengapa penari bisa berputar lebih cepat ketika kedua tangannya dirapatkan ke tubuh?"
 ];
 
-$pertanyaanPemantik = $pertanyaanPemantikMap[$id] ?? "";
+$judulCari = trim(
+    preg_replace('/\s+/', ' ', $submateri["judul"])
+);
 
-$adaPemantik = !empty($pertanyaanPemantik);
+$pertanyaanPemantik = $pertanyaanPemantikMap[$judulCari] ?? "";
 
-// ==========================================
-// INTISARI MATERI UNTUK FITUR SUARA
-// ==========================================
+// ======================================================
+// INTISARI UNTUK FITUR SUARA
+// ======================================================
 
-$intisariVektorMap = [
+$judulIntisari = trim($submateri["judul"]);
 
-    11 => "Pada materi ini kita akan mengenal konsep dasar vektor. Vektor merupakan besaran yang memiliki nilai atau besar serta arah. Berbeda dengan besaran skalar yang hanya memiliki nilai, vektor perlu dinyatakan menggunakan lambang dan arah tertentu. Contohnya adalah perpindahan, kecepatan, dan gaya.",
+$intisariMateri = "";
 
-    12 => "Menggambar vektor dilakukan dengan menggunakan garis berarah atau anak panah. Panjang anak panah menunjukkan besar vektor, sedangkan arah anak panah menunjukkan arah vektor. Dalam menggambar vektor, kita perlu memperhatikan skala dan arah agar representasinya tepat.",
+if (stripos($judulIntisari, "Pengantar Dinamika Rotasi") !== false) {
 
-    13 => "Vektor memiliki beberapa sifat penting, seperti kesamaan vektor, vektor negatif, dan vektor nol. Dua vektor dikatakan sama apabila memiliki besar dan arah yang sama, meskipun titik pangkalnya berbeda.",
+    $intisariMateri =
+        "Oke, di materi ini kita mulai dengan memahami apa itu dinamika rotasi. "
+        . "Sederhananya, dinamika rotasi membahas gerak benda yang berputar dan bagaimana gaya dapat memengaruhi gerakan tersebut. "
+        . "Beberapa konsep penting yang akan muncul adalah torsi dan momen inersia. "
+        . "Jadi, kita akan melihat bagaimana suatu benda bisa mulai berputar, berubah putarannya, atau mempertahankan gerak rotasinya.";
 
-    14 => "Komponen vektor merupakan bagian vektor yang diuraikan ke dalam arah sumbu horizontal dan vertikal. Komponen horizontal biasanya dinyatakan sebagai Vx, sedangkan komponen vertikal dinyatakan sebagai Vy. Kedua komponen tersebut dapat digunakan untuk menentukan besar dan arah vektor.",
+} elseif (stripos($judulIntisari, "Torsi") !== false) {
 
-    15 => "Penguraian vektor berdasarkan aturan trigonometri menggunakan hubungan sinus, kosinus, dan tangen. Jika sudut diukur dari sumbu horizontal, komponen horizontal diperoleh dari besar vektor dikalikan cosinus sudut, sedangkan komponen vertikal diperoleh dari besar vektor dikalikan sinus sudut.",
+    $intisariMateri =
+        "Pernah kepikiran kenapa pintu lebih mudah dibuka kalau didorong dari bagian yang jauh dari engsel? "
+        . "Nah, ini berkaitan dengan torsi. "
+        . "Torsi menunjukkan kemampuan suatu gaya untuk memutar benda terhadap sumbu rotasi. "
+        . "Besarnya dipengaruhi oleh gaya, jarak dari sumbu rotasi, dan sudut antara posisi dengan arah gaya.";
 
-    16 => "Penjumlahan dan pengurangan vektor dengan metode grafis dilakukan melalui gambar. Beberapa metode yang dapat digunakan adalah metode segitiga, metode jajargenjang, dan metode poligon. Resultan merupakan vektor yang menggambarkan hasil gabungan beberapa vektor.",
+} elseif (stripos($judulIntisari, "Momen Inersia") !== false) {
 
-    17 => "Metode analitis menentukan resultan vektor dengan menggunakan komponen-komponennya. Komponen pada arah horizontal dijumlahkan secara terpisah dari komponen pada arah vertikal. Setelah itu, besar resultan dapat dihitung menggunakan teorema Pythagoras.",
+    $intisariMateri =
+        "Kalau torsi berkaitan dengan kemampuan gaya memutar benda, momen inersia berkaitan dengan seberapa sulit benda itu diputar. "
+        . "Nilainya dipengaruhi oleh massa benda dan bagaimana massa tersebut tersebar terhadap sumbu rotasi. "
+        . "Jadi, dua benda yang massanya sama belum tentu memiliki momen inersia yang sama.";
 
-    18 => "Rumus kosinus digunakan untuk menentukan besar resultan dua vektor yang membentuk sudut tertentu. Rumus ini membantu menghitung resultan tanpa harus menggambar vektor secara langsung.",
+} elseif (stripos($judulIntisari, "Hukum Newton") !== false) {
 
-    19 => "Rumus sinus dapat digunakan untuk menentukan arah resultan vektor. Dengan mengetahui besar kedua vektor dan sudut di antara keduanya, arah resultan dapat ditentukan melalui perbandingan sinus.",
+    $intisariMateri =
+        "Sekarang kita masuk ke hubungan antara torsi dan gerak rotasi. "
+        . "Hukum Newton untuk rotasi menyatakan bahwa semakin besar resultan torsi yang bekerja pada benda, semakin besar pula kecenderungan benda mengalami percepatan sudut. "
+        . "Hubungan ini melibatkan torsi, momen inersia, dan percepatan sudut, sama seperti hubungan gaya, massa, dan percepatan pada gerak translasi.";
 
-    20 => "Perkalian vektor terdiri atas perkalian titik atau dot product dan perkalian silang atau cross product. Perkalian titik menghasilkan besaran skalar, sedangkan perkalian silang menghasilkan besaran vektor."
-];
+} elseif (stripos($judulIntisari, "Energi Kinetik Rotasi") !== false) {
 
-$intisariMateri = $intisariVektorMap[$id] ?? "";
+    $intisariMateri =
+        "Benda yang berputar juga memiliki energi. "
+        . "Energi tersebut disebut energi kinetik rotasi dan dipengaruhi oleh momen inersia serta kecepatan sudut benda. "
+        . "Pada benda yang menggelinding, terdapat energi kinetik translasi karena benda bergerak maju dan energi kinetik rotasi karena benda juga berputar.";
 
-// ==========================================
-// INTISARI DINAMIKA ROTASI
-// UNTUK MENJAGA FITUR PADA PROJEK TEMAN
-// ==========================================
+} elseif (stripos($judulIntisari, "Momentum Sudut") !== false) {
 
-if ($intisariMateri === "") {
-
-    if (stripos($judul, "Pengantar Dinamika Rotasi") !== false) {
-
-        $intisariMateri =
-            "Dinamika rotasi membahas gerak benda yang berputar dan bagaimana gaya memengaruhi gerakan tersebut. Konsep pentingnya meliputi torsi dan momen inersia.";
-
-    } elseif (stripos($judul, "Torsi") !== false) {
-
-        $intisariMateri =
-            "Torsi menunjukkan kemampuan suatu gaya untuk memutar benda terhadap sumbu rotasi. Besarnya dipengaruhi oleh gaya, jarak dari sumbu rotasi, dan sudut antara posisi dengan arah gaya.";
-
-    } elseif (stripos($judul, "Momen Inersia") !== false) {
-
-        $intisariMateri =
-            "Momen inersia menunjukkan tingkat kesulitan suatu benda untuk mengalami perubahan gerak rotasi. Nilainya dipengaruhi oleh massa dan distribusi massa terhadap sumbu rotasi.";
-
-    } elseif (stripos($judul, "Hukum Newton") !== false) {
-
-        $intisariMateri =
-            "Hukum Newton untuk rotasi menghubungkan resultan torsi, momen inersia, dan percepatan sudut. Semakin besar resultan torsi, semakin besar percepatan sudut jika momen inersia tetap.";
-
-    } elseif (stripos($judul, "Energi Kinetik Rotasi") !== false) {
-
-        $intisariMateri =
-            "Energi kinetik rotasi merupakan energi yang dimiliki benda karena gerak berputarnya. Energi ini dipengaruhi oleh momen inersia dan kuadrat kecepatan sudut.";
-
-    } elseif (stripos($judul, "Momentum Sudut") !== false) {
-
-        $intisariMateri =
-            "Momentum sudut merupakan ukuran gerak rotasi benda. Untuk benda tegar, momentum sudut berkaitan dengan momen inersia dan kecepatan sudut.";
-    }
+    $intisariMateri =
+        "Terakhir, kita bahas momentum sudut. "
+        . "Momentum sudut merupakan ukuran kuantitas gerak rotasi pada benda. "
+        . "Untuk benda tegar, momentum sudut berkaitan dengan momen inersia dan kecepatan sudut. "
+        . "Ketika resultan torsi luar pada suatu sistem bernilai nol, momentum sudutnya tetap. "
+        . "Contohnya bisa kita lihat pada penari atau atlet skater yang dapat mempercepat putarannya ketika kedua tangannya dirapatkan ke tubuh.";
 }
 
 require_once "includes/head.php";
@@ -207,51 +150,37 @@ require_once "includes/head.php";
 
 <main class="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:py-14">
 
-    <!-- BREADCRUMB -->
-
+    <!-- Breadcrumb -->
     <nav class="text-sm text-darktext/60" aria-label="Breadcrumb">
-
         <a href="materi.php" class="hover:text-navy">
             Materi
         </a>
 
         <span class="mx-1">/</span>
 
-        <a
-            href="materi-detail.php?id=<?php echo $materiId; ?>"
-            class="hover:text-navy"
-        >
+        <a href="materi-detail.php?id=<?php echo $materiId; ?>" class="hover:text-navy">
             <?php echo htmlspecialchars($submateri["materi_judul"]); ?>
         </a>
-
     </nav>
 
 
-    <!-- JUDUL SUBMATERI -->
-
+    <!-- Judul -->
     <div class="mt-5">
 
         <span class="inline-flex rounded-full bg-lavender px-3 py-1 text-xs font-semibold text-navy">
-
             Kelas <?php echo htmlspecialchars($submateri["kelas"]); ?>
             ·
             <?php echo htmlspecialchars($submateri["materi_judul"]); ?>
-
         </span>
 
         <h1 class="mt-3 font-heading text-2xl font-bold text-navy sm:text-3xl">
-
-            <?php echo htmlspecialchars($judul); ?>
-
+            <?php echo htmlspecialchars($submateri["judul"]); ?>
         </h1>
 
     </div>
 
 
-    <!-- PERTANYAAN PEMANTIK -->
-
-    <?php if ($adaPemantik): ?>
-
+    <!-- Pertanyaan Pemantik -->
     <section
         id="card-pemantik"
         class="mt-8 rounded-2xl border border-darktext/10 bg-white p-6 sm:p-8"
@@ -262,10 +191,9 @@ require_once "includes/head.php";
         </h2>
 
         <p class="mt-3 leading-relaxed text-darktext/90">
-
             <?php echo htmlspecialchars($pertanyaanPemantik); ?>
-
         </p>
+
 
         <div id="area-jawab">
 
@@ -276,6 +204,7 @@ require_once "includes/head.php";
                 Tulis jawabanmu berdasarkan pemahaman awalmu:
             </label>
 
+
             <textarea
                 id="jawaban-siswa"
                 rows="5"
@@ -283,12 +212,14 @@ require_once "includes/head.php";
                 class="mt-2 w-full rounded-xl border border-darktext/15 bg-warmwhite px-4 py-3 leading-relaxed text-darktext focus:border-navy focus:outline-none"
             ></textarea>
 
+
             <p
                 id="error-pemantik"
                 class="mt-2 hidden text-sm font-semibold text-red-600"
             >
                 Silakan isi jawabanmu terlebih dahulu sebelum mengirim.
             </p>
+
 
             <button
                 type="button"
@@ -300,8 +231,8 @@ require_once "includes/head.php";
 
         </div>
 
-        <!-- HASIL JAWABAN -->
 
+        <!-- Hasil Jawaban -->
         <div
             id="hasil-jawaban"
             class="mt-5 hidden rounded-xl border border-darktext/10 bg-lavender/40 p-4"
@@ -324,17 +255,11 @@ require_once "includes/head.php";
 
     </section>
 
-    <?php endif; ?>
 
-
-    <!-- PEMBAHASAN MATERI -->
-
+    <!-- Isi Submateri -->
     <article
         id="pembahasan-materi"
-        class="mt-8 rounded-2xl border border-darktext/10 bg-white p-6 sm:p-8"
-        <?php if ($adaPemantik): ?>
-            style="display:none;"
-        <?php endif; ?>
+        class="mt-8 hidden rounded-2xl border border-darktext/10 bg-white p-6 sm:p-8"
     >
 
         <h2 class="font-heading text-lg font-bold text-navy">
@@ -342,8 +267,7 @@ require_once "includes/head.php";
         </h2>
 
 
-        <!-- FITUR SUARA -->
-
+        <!-- Tombol Suara -->
         <div class="mt-4 flex flex-wrap gap-2">
 
             <button
@@ -353,6 +277,7 @@ require_once "includes/head.php";
             >
                 🔊 Dengerin Intinya
             </button>
+
 
             <button
                 type="button"
@@ -364,17 +289,14 @@ require_once "includes/head.php";
 
         </div>
 
-
-        <!-- ISI MATERI -->
-
+        <!-- Isi Materi -->
         <div class="mt-6">
 
-            <?php if (!empty($submateri["isi"])): ?>
+            <?php if ($submateri["isi"]): ?>
 
                 <div class="space-y-4 leading-relaxed text-darktext/90">
 
                     <?php
-
                     $isiMateri = trim($submateri["isi"]);
 
                     $blokMateri = preg_split(
@@ -390,23 +312,23 @@ require_once "includes/head.php";
                             continue;
                         }
 
+                        // Jika blok merupakan rumus display MathJax
                         if (
-                            str_starts_with($blok, '\[') &&
-                            str_ends_with($blok, '\]')
+                            str_starts_with($blok, "\[")
+                            &&
+                            str_ends_with($blok, "\]")
                         ) {
 
                             echo $blok;
 
                         } else {
 
-                            echo "<p>" .
-                                nl2br(htmlspecialchars($blok)) .
-                                "</p>";
-
+                            echo "<p>"
+                                . nl2br(htmlspecialchars($blok))
+                                . "</p>";
                         }
 
                     endforeach;
-
                     ?>
 
                 </div>
@@ -424,15 +346,12 @@ require_once "includes/head.php";
     </article>
 
 
-    <!-- SIMULASI -->
-
+    <!-- Simulasi -->
     <?php if (!empty($submateri["simulasi"])): ?>
 
         <?php
 
-        $simFile = "includes/simulasi-" .
-            basename($submateri["simulasi"]) .
-            ".php";
+        $simFile = "includes/simulasi-" . $submateri["simulasi"] . ".php";
 
         if (file_exists($simFile)) {
             include $simFile;
@@ -443,8 +362,7 @@ require_once "includes/head.php";
     <?php endif; ?>
 
 
-    <!-- MATERI VISUAL -->
-
+    <!-- Materi Visual -->
     <?php if (!empty($submateri["media"])): ?>
 
         <section class="mt-8 rounded-2xl border border-darktext/10 bg-white p-6 sm:p-8">
@@ -452,6 +370,7 @@ require_once "includes/head.php";
             <h2 class="font-heading text-lg font-bold text-navy">
                 Materi Visual
             </h2>
+
 
             <?php
 
@@ -464,6 +383,7 @@ require_once "includes/head.php";
 
             ?>
 
+
             <?php if ($ekstensi === "pdf"): ?>
 
                 <iframe
@@ -471,6 +391,7 @@ require_once "includes/head.php";
                     class="mt-4 h-[480px] w-full rounded-xl border border-darktext/15"
                     title="Materi visual PDF"
                 ></iframe>
+
 
             <?php elseif ($ekstensi === "mp4"): ?>
 
@@ -488,13 +409,14 @@ require_once "includes/head.php";
 
                 </video>
 
+
             <?php else: ?>
 
                 <img
                     src="<?php echo htmlspecialchars($submateri["media"]); ?>"
                     alt="Materi visual"
                     class="mt-4 w-full rounded-xl border border-darktext/15"
-                >
+                />
 
             <?php endif; ?>
 
@@ -503,8 +425,7 @@ require_once "includes/head.php";
     <?php endif; ?>
 
 
-    <!-- NAVIGASI SUBMATERI -->
-
+    <!-- Navigasi Sebelumnya / Berikutnya -->
     <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-between">
 
         <?php if ($prevSub): ?>
@@ -515,6 +436,7 @@ require_once "includes/head.php";
             >
 
                 <svg
+                    class="transition-transform group-hover:-translate-x-0.5"
                     xmlns="http://www.w3.org/2000/svg"
                     width="15"
                     height="15"
@@ -524,7 +446,6 @@ require_once "includes/head.php";
                     stroke-width="2"
                     stroke-linecap="round"
                     stroke-linejoin="round"
-                    class="transition-transform group-hover:-translate-x-0.5"
                 >
                     <path d="M19 12H5"/>
                     <path d="m12 19-7-7 7-7"/>
@@ -555,6 +476,7 @@ require_once "includes/head.php";
                 </span>
 
                 <svg
+                    class="transition-transform group-hover:translate-x-0.5"
                     xmlns="http://www.w3.org/2000/svg"
                     width="15"
                     height="15"
@@ -564,7 +486,6 @@ require_once "includes/head.php";
                     stroke-width="2"
                     stroke-linecap="round"
                     stroke-linejoin="round"
-                    class="transition-transform group-hover:translate-x-0.5"
                 >
                     <path d="M5 12h14"/>
                     <path d="m12 5 7 7-7 7"/>
@@ -582,38 +503,30 @@ require_once "includes/head.php";
 <?php require_once "includes/footer.php"; ?>
 
 
-<!-- ==========================================
-     JAVASCRIPT
-========================================== -->
-
 <script>
-
 document.addEventListener("DOMContentLoaded", function () {
 
-    // ======================================
-    // PERTANYAAN PEMANTIK
-    // ======================================
+    // ==========================================
+    // ELEMEN PERTANYAAN PEMANTIK
+    // ==========================================
 
     var btn = document.getElementById("btn-kirim-jawaban");
-
     var textarea = document.getElementById("jawaban-siswa");
-
     var errorMsg = document.getElementById("error-pemantik");
-
     var hasil = document.getElementById("hasil-jawaban");
-
     var isiJawaban = document.getElementById("isi-jawaban");
-
     var areaJawab = document.getElementById("area-jawab");
-
     var pembahasan = document.getElementById("pembahasan-materi");
 
 
+    // ==========================================
+    // KIRIM JAWABAN
+    // ==========================================
+
     function kirimJawaban() {
 
-        if (!textarea) return;
-
         var jawaban = textarea.value.trim();
+
 
         if (jawaban === "") {
 
@@ -624,6 +537,7 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
+
         errorMsg.classList.add("hidden");
 
         isiJawaban.textContent = jawaban;
@@ -632,7 +546,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         areaJawab.classList.add("hidden");
 
-        pembahasan.style.display = "block";
+        pembahasan.classList.remove("hidden");
 
         pembahasan.scrollIntoView({
             behavior: "smooth",
@@ -642,102 +556,101 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
 
-    if (btn) {
+    // Klik tombol Kirim Jawaban
+    btn.addEventListener("click", function () {
 
-        btn.addEventListener("click", kirimJawaban);
+        kirimJawaban();
 
-        textarea.addEventListener("keydown", function(event) {
-
-            if (event.key === "Enter" && !event.shiftKey) {
-
-                event.preventDefault();
-
-                kirimJawaban();
-
-            }
-
-        });
-
-    }
+    });
 
 
-    // ======================================
+    // ==========================================
+    // ENTER UNTUK KIRIM
+    // SHIFT + ENTER UNTUK BARIS BARU
+    // ==========================================
+
+    textarea.addEventListener("keydown", function (event) {
+
+        if (event.key === "Enter" && !event.shiftKey) {
+
+            event.preventDefault();
+
+            kirimJawaban();
+
+        }
+
+    });
+
+
+    // ==========================================
     // FITUR SUARA
-    // ======================================
+    // ==========================================
 
     var btnBaca = document.getElementById("btn-baca");
-
     var btnStop = document.getElementById("btn-stop");
 
 
+    // Intisari dari PHP
     var teksIntisari = <?php
-
         echo json_encode(
             $intisariMateri,
-            JSON_UNESCAPED_UNICODE |
-            JSON_UNESCAPED_SLASHES
+            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
         );
-
     ?>;
 
 
-    // DENGERIN INTINYA
+    // Tombol Dengerin Intinya
+    btnBaca.addEventListener("click", function () {
 
-    if (btnBaca) {
+        if (!("speechSynthesis" in window)) {
 
-        btnBaca.addEventListener("click", function() {
+            alert("Browser kamu tidak mendukung fitur suara.");
 
-            if (!("speechSynthesis" in window)) {
+            return;
+        }
 
-                alert("Browser kamu tidak mendukung fitur suara.");
 
-                return;
-            }
+        if (teksIntisari === "") {
 
-            if (teksIntisari === "") {
+            alert("Intisari untuk submateri ini belum tersedia.");
 
-                alert("Intisari untuk submateri ini belum tersedia.");
+            return;
+        }
 
-                return;
-            }
+
+        // Hentikan suara sebelumnya jika masih berjalan
+        window.speechSynthesis.cancel();
+
+
+        var suara = new SpeechSynthesisUtterance(
+            teksIntisari
+        );
+
+
+        suara.lang = "id-ID";
+
+        suara.rate = 0.9;
+
+        suara.pitch = 1;
+
+
+        window.speechSynthesis.speak(suara);
+
+    });
+
+
+    // Tombol Stop
+    btnStop.addEventListener("click", function () {
+
+        if ("speechSynthesis" in window) {
 
             window.speechSynthesis.cancel();
 
-            var suara = new SpeechSynthesisUtterance(
-                teksIntisari
-            );
+        }
 
-            suara.lang = "id-ID";
-
-            suara.rate = 0.9;
-
-            suara.pitch = 1;
-
-            window.speechSynthesis.speak(suara);
-
-        });
-
-    }
-
-
-    // STOP SUARA
-
-    if (btnStop) {
-
-        btnStop.addEventListener("click", function() {
-
-            if ("speechSynthesis" in window) {
-
-                window.speechSynthesis.cancel();
-
-            }
-
-        });
-
-    }
+    });
 
 });
-
 </script>
 
 
