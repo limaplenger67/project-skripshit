@@ -272,7 +272,6 @@ require_once "includes/head.php";
                     value="<?php echo e($bagian); ?>"
                 >
 
-
                 <div class="flex flex-col gap-4">
 
                     <?php foreach ($daftarSoal as $index => $soal): ?>
@@ -292,12 +291,10 @@ require_once "includes/head.php";
 
                             </div>
 
-
                             <!-- PERTANYAAN -->
                             <div class="text-sm leading-relaxed text-darktext sm:text-base">
                                 <?php echo nl2br(e($soal["pertanyaan"])); ?>
                             </div>
-
 
                             <?php if ($bagian === "ESAI"): ?>
 
@@ -316,6 +313,7 @@ require_once "includes/head.php";
                                         name="jawaban[<?php echo (int) $soal["id"]; ?>]"
                                         rows="5"
                                         required
+                                        minlength="3"
                                         placeholder="Tuliskan jawabanmu di sini..."
                                         class="w-full rounded-xl border border-darktext/15 bg-warmwhite px-4 py-3 text-sm leading-relaxed outline-none transition focus:border-blue focus:ring-2 focus:ring-blue/15"
                                     ></textarea>
@@ -391,7 +389,6 @@ require_once "includes/head.php";
                     <button
                         type="submit"
                         class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full bg-navy px-6 py-3 text-sm font-semibold text-white transition hover:bg-blue sm:w-auto"
-                        onclick="return confirm('Apakah kamu yakin ingin mengumpulkan jawaban?');"
                     >
                         Kumpulkan Jawaban
 
@@ -417,5 +414,23 @@ require_once "includes/head.php";
     </section>
 
 </main>
+
+<!-- VALIDASI FORM -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const form = document.getElementById("form-latihan");
+
+    if (!form) {
+        return;
+    }
+
+    form.addEventListener("submit", function (event) {
+        if (!form.checkValidity()) {
+            event.preventDefault();
+            form.reportValidity();
+        }
+    });
+});
+</script>
 
 <?php require_once "includes/footer.php"; ?>
