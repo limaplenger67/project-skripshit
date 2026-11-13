@@ -26,7 +26,7 @@ require_once "includes/head.php";
             >
         </div>
 
-        <div class="mx-auto max-w-6xl px-4 pb-12 pt-10 sm:px-6 sm:pb-16 sm:pt-14 lg:pb-16">
+        <div class="mx-auto max-w-[1460px] px-4 pb-12 pt-10 sm:px-6 sm:pb-16 sm:pt-14 lg:pb-16">
             <div class="relative z-10 max-w-2xl">
                 <span class="inline-flex items-center gap-2 rounded-full border border-[#D8E6FF] bg-[#EAF2FF] px-4 py-2 text-xs font-semibold text-[#173A70] sm:text-sm">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -107,7 +107,7 @@ require_once "includes/head.php";
 
     <!-- KEUNGGULAN PHYZONE -->
     <section class="bg-white py-14 sm:py-16">
-        <div class="mx-auto max-w-6xl px-4 sm:px-6">
+        <div class="mx-auto max-w-[1460px] px-4 sm:px-6">
             <div class="mx-auto max-w-xl text-center">
                 <h2 class="font-heading text-2xl font-bold text-[#173A70] sm:text-3xl">Kenapa PhyZone?</h2>
                 <p class="mt-3 text-sm leading-6 text-[#61738D] sm:text-base">
@@ -147,7 +147,7 @@ require_once "includes/head.php";
 
     <!-- CHATBOT AI -->
     <section id="chat-ai" class="bg-[#F4F7FC] py-14 sm:py-16">
-        <div class="mx-auto grid max-w-6xl items-center gap-8 px-4 sm:px-6 lg:grid-cols-2">
+        <div class="mx-auto grid max-w-[1460px] items-center gap-8 px-4 sm:px-6 lg:grid-cols-2">
             <div>
                 <span class="inline-flex rounded-full border border-[#D7E5FF] bg-[#EAF2FF] px-4 py-2 text-xs font-semibold text-[#173A70]">
                     PhyBot, Asisten Belajarmu
@@ -203,7 +203,7 @@ require_once "includes/head.php";
 
     <!-- PENGEMBANG -->
     <section id="tentang" class="bg-white py-14 sm:py-16">
-        <div class="mx-auto max-w-6xl px-4 sm:px-6">
+        <div class="mx-auto max-w-[1460px] px-4 sm:px-6">
             <div class="mx-auto max-w-xl text-center">
                 <h2 class="font-heading text-2xl font-bold text-[#173A70] sm:text-3xl">PhyZone Dikembangkan Oleh</h2>
                 <p class="mt-3 text-sm leading-6 text-[#61738D] sm:text-base">
