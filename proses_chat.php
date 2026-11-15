@@ -1,4 +1,3 @@
-
 <?php
 
 header("Content-Type: application/json; charset=UTF-8");
@@ -40,7 +39,7 @@ if (mb_strlen($pesan) > 3000) {
     exit;
 }
 
-// Pastikan API key tersedia
+// Pastikan API Key tersedia
 if (empty($configAI["api_key"])) {
     http_response_code(500);
     echo json_encode([
@@ -84,6 +83,18 @@ jawab dengan sopan bahwa kamu adalah pendamping
 belajar Fisika PhyZone.
 
 Jangan mengarang informasi atau rumus.
+
+ATURAN FORMAT JAWABAN:
+1. Gunakan teks biasa yang rapi dan mudah dibaca.
+2. Jangan gunakan tanda bintang (*) untuk penekanan.
+3. Jangan gunakan format Markdown seperti **tebal** atau # judul.
+4. Jangan gunakan garis pemisah seperti ---.
+5. Jangan gunakan tanda kutip Markdown atau simbol >.
+6. Jika membuat judul, tuliskan langsung tanpa simbol khusus.
+7. Gunakan penomoran biasa (1., 2., 3.) jika diperlukan.
+8. Pisahkan paragraf agar jawaban tidak terlalu padat.
+9. Tuliskan rumus Fisika dengan format sederhana.
+10. Hindari penggunaan simbol dekoratif yang tidak diperlukan.
 ";
 
 // Riwayat percakapan
@@ -91,7 +102,7 @@ if (!isset($_SESSION["riwayat_phybot"])) {
     $_SESSION["riwayat_phybot"] = [];
 }
 
-// Susun isi percakapan sebelumnya
+// Ambil maksimal 10 pesan sebelumnya
 $contents = array_slice(
     $_SESSION["riwayat_phybot"],
     -10
@@ -182,7 +193,8 @@ foreach (
     }
 }
 
-if ($jawaban === "") {
+// Periksa jawaban kosong
+if (trim($jawaban) === "") {
     echo json_encode([
         "success" => false,
         "message" => "PhyBot belum dapat memberikan jawaban. Silakan coba lagi."
@@ -190,6 +202,33 @@ if ($jawaban === "") {
 
     exit;
 }
+
+// Bersihkan format Markdown yang mungkin masih diberikan Gemini
+$jawaban = preg_replace('/^\s{0,3}#{1,6}\s*/m', '', $jawaban);
+
+$jawaban = preg_replace(
+    '/\*\*(.*?)\*\*/s',
+    '$1',
+    $jawaban
+);
+
+$jawaban = preg_replace(
+    '/(?<!\*)\*([^*\n]+)\*(?!\*)/',
+    '$1',
+    $jawaban
+);
+
+$jawaban = preg_replace(
+    '/^\s*(?:---+|___+|\*\*\*+)\s*$/m',
+    '',
+    $jawaban
+);
+
+$jawaban = preg_replace('/^\s*>\s?/m', '', $jawaban);
+
+$jawaban = str_replace("`", "", $jawaban);
+
+$jawaban = trim($jawaban);
 
 // Simpan percakapan ke session
 $_SESSION["riwayat_phybot"] = array_slice(
