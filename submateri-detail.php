@@ -171,30 +171,30 @@ if ($intisariMateri === "") {
         $intisariMateri =
             "Dinamika rotasi membahas gerak benda yang berputar dan bagaimana gaya memengaruhi gerakan tersebut. Konsep pentingnya meliputi torsi dan momen inersia.";
 
-    } elseif (stripos($judul, "Torsi") !== false) {
+    } elseif (stripos($judul, "Momen Gaya dan Momen Kopel") !== false) {
 
         $intisariMateri =
-            "Torsi menunjukkan kemampuan suatu gaya untuk memutar benda terhadap sumbu rotasi. Besarnya dipengaruhi oleh gaya, jarak dari sumbu rotasi, dan sudut antara posisi dengan arah gaya.";
+            "Momen gaya adalah ukuran kemampuan gaya untuk menyebabkan benda berputar. Besarnya dipengaruhi oleh gaya, jarak terhadap sumbu rotasi, dan sudut gaya. Momen kopel merupakan pasangan dua gaya sama besar, sejajar, dan berlawanan arah yang menghasilkan gerak rotasi.";
 
     } elseif (stripos($judul, "Momen Inersia") !== false) {
 
         $intisariMateri =
-            "Momen inersia menunjukkan tingkat kesulitan suatu benda untuk mengalami perubahan gerak rotasi. Nilainya dipengaruhi oleh massa dan distribusi massa terhadap sumbu rotasi.";
-
-    } elseif (stripos($judul, "Hukum Newton") !== false) {
-
-        $intisariMateri =
-            "Hukum Newton untuk rotasi menghubungkan resultan torsi, momen inersia, dan percepatan sudut. Semakin besar resultan torsi, semakin besar percepatan sudut jika momen inersia tetap.";
-
-    } elseif (stripos($judul, "Energi Kinetik Rotasi") !== false) {
-
-        $intisariMateri =
-            "Energi kinetik rotasi merupakan energi yang dimiliki benda karena gerak berputarnya. Energi ini dipengaruhi oleh momen inersia dan kuadrat kecepatan sudut.";
+            "Momen inersia merupakan ukuran kelembaman benda terhadap perubahan gerak rotasi. Besarnya dipengaruhi oleh massa benda, distribusi massa, dan posisi sumbu rotasi. Semakin jauh massa dari sumbu rotasi, semakin besar momen inersianya.";
 
     } elseif (stripos($judul, "Momentum Sudut") !== false) {
 
         $intisariMateri =
-            "Momentum sudut merupakan ukuran gerak rotasi benda. Untuk benda tegar, momentum sudut berkaitan dengan momen inersia dan kecepatan sudut.";
+            "Momentum sudut merupakan besaran yang menggambarkan gerak rotasi benda. Momentum sudut dipengaruhi oleh momen inersia dan kecepatan sudut. Jika resultan torsi luar bernilai nol, momentum sudut sistem tetap.";
+
+    } elseif (stripos($judul, "Usaha, Energi, dan Daya pada Gerak Rotasi") !== false) {
+
+        $intisariMateri =
+            "Pada gerak rotasi, usaha terjadi ketika momen gaya menyebabkan perpindahan sudut. Benda yang berputar memiliki energi kinetik rotasi. Sementara itu, daya menunjukkan laju usaha yang dilakukan dalam gerak rotasi.";
+
+    } elseif (stripos($judul, "Hukum Newton pada Gerak Rotasi") !== false) {
+
+        $intisariMateri =
+            "Hukum Newton pada gerak rotasi menjelaskan hubungan antara resultan momen gaya, momen inersia, dan percepatan sudut. Semakin besar resultan momen gaya pada benda dengan momen inersia tetap, semakin besar percepatan sudutnya.";
     }
 }
 
