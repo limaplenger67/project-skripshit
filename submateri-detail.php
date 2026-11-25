@@ -1,4 +1,3 @@
-
 <?php
 $pageTitle = "Submateri";
 
@@ -24,13 +23,13 @@ $id = (int) $_GET["id"];
 
 $stmt = mysqli_prepare(
     $conn,
-    "SELECT s.*, 
+    "SELECT s.*,
             m.judul AS materi_judul,
             m.kelas,
             m.id AS materi_id
      FROM submateri s
      JOIN materi m ON s.materi_id = m.id
-     WHERE s.id = ? 
+     WHERE s.id = ?
      AND s.status_publikasi = 'publik'"
 );
 
@@ -129,74 +128,6 @@ $pertanyaanPemantikMap = [
 $pertanyaanPemantik = $pertanyaanPemantikMap[$id] ?? "";
 
 $adaPemantik = !empty($pertanyaanPemantik);
-
-// ==========================================
-// INTISARI MATERI UNTUK FITUR SUARA
-// ==========================================
-
-$intisariVektorMap = [
-
-    11 => "Pada materi ini kita akan mengenal konsep dasar vektor. Vektor merupakan besaran yang memiliki nilai atau besar serta arah. Berbeda dengan besaran skalar yang hanya memiliki nilai, vektor perlu dinyatakan menggunakan lambang dan arah tertentu. Contohnya adalah perpindahan, kecepatan, dan gaya.",
-
-    12 => "Menggambar vektor dilakukan dengan menggunakan garis berarah atau anak panah. Panjang anak panah menunjukkan besar vektor, sedangkan arah anak panah menunjukkan arah vektor. Dalam menggambar vektor, kita perlu memperhatikan skala dan arah agar representasinya tepat.",
-
-    13 => "Vektor memiliki beberapa sifat penting, seperti kesamaan vektor, vektor negatif, dan vektor nol. Dua vektor dikatakan sama apabila memiliki besar dan arah yang sama, meskipun titik pangkalnya berbeda.",
-
-    14 => "Komponen vektor merupakan bagian vektor yang diuraikan ke dalam arah sumbu horizontal dan vertikal. Komponen horizontal biasanya dinyatakan sebagai Vx, sedangkan komponen vertikal dinyatakan sebagai Vy. Kedua komponen tersebut dapat digunakan untuk menentukan besar dan arah vektor.",
-
-    15 => "Penguraian vektor berdasarkan aturan trigonometri menggunakan hubungan sinus, kosinus, dan tangen. Jika sudut diukur dari sumbu horizontal, komponen horizontal diperoleh dari besar vektor dikalikan cosinus sudut, sedangkan komponen vertikal diperoleh dari besar vektor dikalikan sinus sudut.",
-
-    16 => "Penjumlahan dan pengurangan vektor dengan metode grafis dilakukan melalui gambar. Beberapa metode yang dapat digunakan adalah metode segitiga, metode jajargenjang, dan metode poligon. Resultan merupakan vektor yang menggambarkan hasil gabungan beberapa vektor.",
-
-    17 => "Metode analitis menentukan resultan vektor dengan menggunakan komponen-komponennya. Komponen pada arah horizontal dijumlahkan secara terpisah dari komponen pada arah vertikal. Setelah itu, besar resultan dapat dihitung menggunakan teorema Pythagoras.",
-
-    18 => "Rumus kosinus digunakan untuk menentukan besar resultan dua vektor yang membentuk sudut tertentu. Rumus ini membantu menghitung resultan tanpa harus menggambar vektor secara langsung.",
-
-    19 => "Rumus sinus dapat digunakan untuk menentukan arah resultan vektor. Dengan mengetahui besar kedua vektor dan sudut di antara keduanya, arah resultan dapat ditentukan melalui perbandingan sinus.",
-
-    20 => "Perkalian vektor terdiri atas perkalian titik atau dot product dan perkalian silang atau cross product. Perkalian titik menghasilkan besaran skalar, sedangkan perkalian silang menghasilkan besaran vektor."
-];
-
-$intisariMateri = $intisariVektorMap[$id] ?? "";
-
-// ==========================================
-// INTISARI DINAMIKA ROTASI
-// UNTUK MENJAGA FITUR PADA PROJEK TEMAN
-// ==========================================
-
-if ($intisariMateri === "") {
-
-    if (stripos($judul, "Pengantar Dinamika Rotasi") !== false) {
-
-        $intisariMateri =
-            "Dinamika rotasi membahas gerak benda yang berputar dan bagaimana gaya memengaruhi gerakan tersebut. Konsep pentingnya meliputi torsi dan momen inersia.";
-
-    } elseif (stripos($judul, "Momen Gaya dan Momen Kopel") !== false) {
-
-        $intisariMateri =
-            "Momen gaya adalah ukuran kemampuan gaya untuk menyebabkan benda berputar. Besarnya dipengaruhi oleh gaya, jarak terhadap sumbu rotasi, dan sudut gaya. Momen kopel merupakan pasangan dua gaya sama besar, sejajar, dan berlawanan arah yang menghasilkan gerak rotasi.";
-
-    } elseif (stripos($judul, "Momen Inersia") !== false) {
-
-        $intisariMateri =
-            "Momen inersia merupakan ukuran kelembaman benda terhadap perubahan gerak rotasi. Besarnya dipengaruhi oleh massa benda, distribusi massa, dan posisi sumbu rotasi. Semakin jauh massa dari sumbu rotasi, semakin besar momen inersianya.";
-
-    } elseif (stripos($judul, "Momentum Sudut") !== false) {
-
-        $intisariMateri =
-            "Momentum sudut merupakan besaran yang menggambarkan gerak rotasi benda. Momentum sudut dipengaruhi oleh momen inersia dan kecepatan sudut. Jika resultan torsi luar bernilai nol, momentum sudut sistem tetap.";
-
-    } elseif (stripos($judul, "Usaha, Energi, dan Daya pada Gerak Rotasi") !== false) {
-
-        $intisariMateri =
-            "Pada gerak rotasi, usaha terjadi ketika momen gaya menyebabkan perpindahan sudut. Benda yang berputar memiliki energi kinetik rotasi. Sementara itu, daya menunjukkan laju usaha yang dilakukan dalam gerak rotasi.";
-
-    } elseif (stripos($judul, "Hukum Newton pada Gerak Rotasi") !== false) {
-
-        $intisariMateri =
-            "Hukum Newton pada gerak rotasi menjelaskan hubungan antara resultan momen gaya, momen inersia, dan percepatan sudut. Semakin besar resultan momen gaya pada benda dengan momen inersia tetap, semakin besar percepatan sudutnya.";
-    }
-}
 
 require_once "includes/head.php";
 ?>
@@ -351,7 +282,7 @@ require_once "includes/head.php";
                 id="btn-baca"
                 class="rounded-full bg-navy px-5 py-2.5 text-sm font-semibold text-warmwhite transition-colors hover:bg-blue"
             >
-                🔊 Dengerin Intinya
+                🔊 Dengarkan Materi
             </button>
 
             <button
@@ -367,7 +298,7 @@ require_once "includes/head.php";
 
         <!-- ISI MATERI -->
 
-        <div class="mt-6">
+        <div class="mt-6" id="isi-materi-suara">
 
             <?php if (!empty($submateri["isi"])): ?>
 
@@ -395,7 +326,11 @@ require_once "includes/head.php";
                             str_ends_with($blok, '\]')
                         ) {
 
-                            echo $blok;
+                            echo htmlspecialchars(
+                                $blok,
+                                ENT_QUOTES,
+                                "UTF-8"
+                            );
 
                         } else {
 
@@ -595,17 +530,11 @@ document.addEventListener("DOMContentLoaded", function () {
     // ======================================
 
     var btn = document.getElementById("btn-kirim-jawaban");
-
     var textarea = document.getElementById("jawaban-siswa");
-
     var errorMsg = document.getElementById("error-pemantik");
-
     var hasil = document.getElementById("hasil-jawaban");
-
     var isiJawaban = document.getElementById("isi-jawaban");
-
     var areaJawab = document.getElementById("area-jawab");
-
     var pembahasan = document.getElementById("pembahasan-materi");
 
 
@@ -618,7 +547,6 @@ document.addEventListener("DOMContentLoaded", function () {
         if (jawaban === "") {
 
             errorMsg.classList.remove("hidden");
-
             textarea.focus();
 
             return;
@@ -663,26 +591,158 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // ======================================
     // FITUR SUARA
+    // MEMBACA PEMBAHASAN YANG TAMPIL
     // ======================================
 
     var btnBaca = document.getElementById("btn-baca");
-
     var btnStop = document.getElementById("btn-stop");
+    var areaMateriSuara = document.getElementById("isi-materi-suara");
+
+    var daftarUcapan = [];
+    var indeksUcapan = 0;
 
 
-    var teksIntisari = <?php
+    // Ambil teks langsung dari area pembahasan.
+    function ambilTeksMateri() {
 
-        echo json_encode(
-            $intisariMateri,
-            JSON_UNESCAPED_UNICODE |
-            JSON_UNESCAPED_SLASHES
+        if (!areaMateriSuara) return "";
+
+        var salinan = areaMateriSuara.cloneNode(true);
+
+        // Mengambil label rumus MathJax jika tersedia.
+        salinan.querySelectorAll("mjx-container").forEach(function(rumus) {
+
+            var labelRumus = rumus.getAttribute("aria-label");
+
+            var teksRumus = labelRumus || rumus.textContent || "";
+
+            rumus.replaceWith(
+                document.createTextNode(
+                    ". Rumus: " + teksRumus + ". "
+                )
+            );
+
+        });
+
+        // Hilangkan elemen yang tidak perlu dibacakan.
+        salinan.querySelectorAll(
+            "button, script, style, noscript, .mjx-assistive-mml"
+        ).forEach(function(elemen) {
+
+            elemen.remove();
+
+        });
+
+        return (salinan.textContent || "")
+            .replace(/\s+/g, " ")
+            .replace(/\s+([,.!?;:])/g, "$1")
+            .trim();
+
+    }
+
+
+    // Membagi teks agar pembacaan tidak terlalu panjang.
+    function bagiTeks(teks, batas) {
+
+        var kalimat = teks.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [];
+
+        var hasil = [];
+        var sementara = "";
+
+        kalimat.forEach(function(item) {
+
+            item = item.trim();
+
+            if (!item) return;
+
+            if ((sementara + " " + item).trim().length > batas) {
+
+                if (sementara.trim()) {
+                    hasil.push(sementara.trim());
+                }
+
+                sementara = item;
+
+            } else {
+
+                sementara += (sementara ? " " : "") + item;
+
+            }
+
+        });
+
+        if (sementara.trim()) {
+            hasil.push(sementara.trim());
+        }
+
+        return hasil;
+
+    }
+
+
+    // Membaca teks secara berurutan.
+    function bacaBagianBerikutnya() {
+
+        if (indeksUcapan >= daftarUcapan.length) {
+
+            btnBaca.textContent = "🔊 Dengarkan Materi";
+
+            return;
+        }
+
+        var suara = new SpeechSynthesisUtterance(
+            daftarUcapan[indeksUcapan]
         );
 
-    ?>;
+        suara.lang = "id-ID";
+        suara.rate = 0.9;
+        suara.pitch = 1;
+
+        var suaraTersedia = window.speechSynthesis.getVoices();
+
+        var suaraIndonesia = suaraTersedia.find(function(item) {
+
+            return item.lang &&
+                item.lang.toLowerCase().startsWith("id");
+
+        });
+
+        if (suaraIndonesia) {
+            suara.voice = suaraIndonesia;
+        }
+
+        suara.onend = function() {
+
+            indeksUcapan++;
+
+            bacaBagianBerikutnya();
+
+        };
+
+        suara.onerror = function(event) {
+
+            if (
+                event.error !== "canceled" &&
+                event.error !== "interrupted"
+            ) {
+
+                btnBaca.textContent = "🔊 Dengarkan Materi";
+
+                console.error(
+                    "Kesalahan fitur suara:",
+                    event.error
+                );
+
+            }
+
+        };
+
+        window.speechSynthesis.speak(suara);
+
+    }
 
 
-    // DENGERIN INTINYA
-
+    // Tombol mulai membaca.
     if (btnBaca) {
 
         btnBaca.addEventListener("click", function() {
@@ -694,42 +754,44 @@ document.addEventListener("DOMContentLoaded", function () {
                 return;
             }
 
-            if (teksIntisari === "") {
+            var teksMateri = ambilTeksMateri();
 
-                alert("Intisari untuk submateri ini belum tersedia.");
+            if (!teksMateri) {
+
+                alert("Pembahasan materi belum tersedia untuk dibacakan.");
 
                 return;
             }
 
             window.speechSynthesis.cancel();
 
-            var suara = new SpeechSynthesisUtterance(
-                teksIntisari
-            );
+            daftarUcapan = bagiTeks(teksMateri, 180);
 
-            suara.lang = "id-ID";
+            indeksUcapan = 0;
 
-            suara.rate = 0.9;
+            btnBaca.textContent = "🔊 Sedang Membacakan...";
 
-            suara.pitch = 1;
-
-            window.speechSynthesis.speak(suara);
+            bacaBagianBerikutnya();
 
         });
 
     }
 
 
-    // STOP SUARA
-
+    // Tombol menghentikan suara.
     if (btnStop) {
 
         btnStop.addEventListener("click", function() {
 
             if ("speechSynthesis" in window) {
-
                 window.speechSynthesis.cancel();
+            }
 
+            daftarUcapan = [];
+            indeksUcapan = 0;
+
+            if (btnBaca) {
+                btnBaca.textContent = "🔊 Dengarkan Materi";
             }
 
         });

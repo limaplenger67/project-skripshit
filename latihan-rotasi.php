@@ -14,15 +14,25 @@ function e($value) {
     return htmlspecialchars((string) $value, ENT_QUOTES, "UTF-8");
 }
 
-// Validasi bagian latihan
 $bagian = strtoupper(trim($_GET["bagian"] ?? ""));
 
-$daftarBagian = ["A", "B", "C", "D", "E", "ESAI"];
+$daftarBagian = [
+    "A", "B", "C", "D", "E", "ESAI"
+];
 
 if (!in_array($bagian, $daftarBagian, true)) {
     header("Location: materi.php");
     exit;
 }
+
+$namaBagian = [
+    "A" => "Momen Gaya dan Momen Kopel",
+    "B" => "Momen Inersia",
+    "C" => "Momentum Sudut",
+    "D" => "Usaha, Energi, dan Daya pada Gerak Rotasi",
+    "E" => "Hukum Newton pada Gerak Rotasi",
+    "ESAI" => "Evaluasi Esai"
+];
 
 // Ambil materi Dinamika Rotasi
 $stmtMateri = mysqli_prepare(
@@ -40,61 +50,52 @@ $materi = mysqli_fetch_assoc($resultMateri);
 mysqli_stmt_close($stmtMateri);
 
 if (!$materi) {
-    exit("Materi Dinamika Rotasi tidak ditemukan atau belum dipublikasikan.");
+    exit("Materi Dinamika Rotasi tidak ditemukan.");
 }
 
 $materiId = (int) $materi["id"];
-
-// Nama bagian latihan
-$namaBagian = [
-    "A" => "Momen Gaya dan Momen Kopel",
-    "B" => "Momen Inersia",
-    "C" => "Momentum Sudut",
-    "D" => "Usaha, Energi, dan Daya pada Gerak Rotasi",
-    "E" => "Hukum Newton pada Gerak Rotasi",
-    "ESAI" => "Evaluasi Esai"
-];
-
-// Tentukan jenis soal
-$jenisSoal = ($bagian === "ESAI") ? "esai" : "pilihan_ganda";
-
-// Ambil soal dari database
-$stmtSoal = mysqli_prepare(
-    $conn,
-    "SELECT *
-     FROM soal
-     WHERE materi_id = ?
-     AND bagian = ?
-     AND jenis_soal = ?
-     ORDER BY id ASC"
-);
-
-mysqli_stmt_bind_param(
-    $stmtSoal,
-    "iss",
-    $materiId,
-    $bagian,
-    $jenisSoal
-);
-
-mysqli_stmt_execute($stmtSoal);
-$resultSoal = mysqli_stmt_get_result($stmtSoal);
-
 $daftarSoal = [];
 
-while ($row = mysqli_fetch_assoc($resultSoal)) {
-    $daftarSoal[] = $row;
-}
+// Ambil soal dari tabel khusus Dinamika Rotasi
+// Tabel saat ini berisi soal pilihan ganda.
+if ($bagian !== "ESAI") {
 
-mysqli_stmt_close($stmtSoal);
+    $stmtSoal = mysqli_prepare(
+        $conn,
+        "SELECT
+            id,
+            subbab,
+            tingkat_kognitif,
+            jenis_soal,
+            pertanyaan,
+            opsi_a,
+            opsi_b,
+            opsi_c,
+            opsi_d,
+            kunci_jawaban
+         FROM soal_dinamika_rotasi
+         WHERE subbab = ?
+         AND jenis_soal = 'pilihan_ganda'
+         ORDER BY id ASC"
+    );
+
+    mysqli_stmt_bind_param($stmtSoal, "s", $bagian);
+    mysqli_stmt_execute($stmtSoal);
+
+    $resultSoal = mysqli_stmt_get_result($stmtSoal);
+
+    while ($row = mysqli_fetch_assoc($resultSoal)) {
+        $daftarSoal[] = $row;
+    }
+
+    mysqli_stmt_close($stmtSoal);
+}
 
 $totalSoal = count($daftarSoal);
 
-// Buat token keamanan
-$_SESSION["csrf_latihan"] = bin2hex(random_bytes(32));
-$csrfToken = $_SESSION["csrf_latihan"];
+$_SESSION["csrf_latihan_rotasi"] = bin2hex(random_bytes(32));
+$csrfToken = $_SESSION["csrf_latihan_rotasi"];
 
-// Tampilkan halaman
 require_once "includes/head.php";
 ?>
 
@@ -124,8 +125,8 @@ require_once "includes/head.php";
                 </h1>
 
                 <p class="text-gray-500 mt-2">
-                    Kerjakan soal berikut dengan teliti dan pilih atau tuliskan
-                    jawaban yang paling tepat.
+                    Kerjakan soal berikut dengan teliti dan pilih jawaban
+                    yang paling tepat.
                 </p>
 
             </div>
@@ -141,7 +142,8 @@ require_once "includes/head.php";
                 </h2>
 
                 <p class="text-sm text-yellow-800">
-                    Belum ada soal yang tersedia untuk bagian ini.
+                    Belum ada soal yang tersedia untuk
+                    <?= e($namaBagian[$bagian]) ?>.
                     Silakan kembali ke halaman materi.
                 </p>
 
@@ -156,9 +158,7 @@ require_once "includes/head.php";
                 </p>
 
                 <p class="text-sm text-blue-700 mt-1">
-                    <?= $jenisSoal === "esai"
-                        ? "Tuliskan jawaban esai pada kolom yang tersedia."
-                        : "Pilih satu jawaban yang paling tepat pada setiap soal." ?>
+                    Pilih satu jawaban yang paling tepat pada setiap soal.
                 </p>
 
                 <p class="text-sm font-semibold text-blue-700 mt-3">
@@ -199,59 +199,41 @@ require_once "includes/head.php";
 
                             </div>
 
-                            <?php if ($jenisSoal === "pilihan_ganda"): ?>
+                            <?php
+                            $pilihan = [
+                                "a" => $soal["opsi_a"],
+                                "b" => $soal["opsi_b"],
+                                "c" => $soal["opsi_c"],
+                                "d" => $soal["opsi_d"]
+                            ];
+                            ?>
 
-                                <?php
-                                $pilihan = [
-                                    "a" => $soal["pilihan_a"],
-                                    "b" => $soal["pilihan_b"],
-                                    "c" => $soal["pilihan_c"],
-                                    "d" => $soal["pilihan_d"]
-                                ];
-                                ?>
+                            <div class="space-y-3 ml-12">
 
-                                <div class="space-y-3 ml-12">
+                                <?php foreach ($pilihan as $huruf => $isi): ?>
 
-                                    <?php foreach ($pilihan as $huruf => $isi): ?>
+                                    <label class="flex items-start gap-3 border border-gray-200 rounded-lg p-3 cursor-pointer hover:bg-blue-50 hover:border-blue-300 transition">
 
-                                        <label class="flex items-start gap-3 border border-gray-200 rounded-lg p-3 cursor-pointer hover:bg-blue-50 hover:border-blue-300 transition">
+                                        <input
+                                            type="radio"
+                                            name="jawaban[<?= (int) $soal["id"] ?>]"
+                                            value="<?= e($huruf) ?>"
+                                            required
+                                            class="mt-1 accent-blue-600"
+                                        >
 
-                                            <input
-                                                type="radio"
-                                                name="jawaban[<?= (int) $soal["id"] ?>]"
-                                                value="<?= e($huruf) ?>"
-                                                required
-                                                class="mt-1 accent-blue-600"
-                                            >
+                                        <span class="text-sm text-gray-700 leading-relaxed">
+                                            <strong class="uppercase">
+                                                <?= e($huruf) ?>.
+                                            </strong>
+                                            <?= e($isi) ?>
+                                        </span>
 
-                                            <span class="text-sm text-gray-700 leading-relaxed">
-                                                <strong class="uppercase">
-                                                    <?= e($huruf) ?>.
-                                                </strong>
-                                                <?= e($isi) ?>
-                                            </span>
+                                    </label>
 
-                                        </label>
+                                <?php endforeach; ?>
 
-                                    <?php endforeach; ?>
-
-                                </div>
-
-                            <?php else: ?>
-
-                                <div class="ml-12">
-
-                                    <textarea
-                                        name="jawaban[<?= (int) $soal["id"] ?>]"
-                                        rows="4"
-                                        required
-                                        placeholder="Tuliskan jawaban kamu di sini..."
-                                        class="w-full border border-gray-300 rounded-xl p-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 resize-y"
-                                    ></textarea>
-
-                                </div>
-
-                            <?php endif; ?>
+                            </div>
 
                         </div>
 

@@ -1,4 +1,3 @@
-
 <?php
 $pageTitle = "Detail Materi";
 
@@ -59,8 +58,9 @@ while ($row = mysqli_fetch_assoc($resultSub)) {
 
 mysqli_stmt_close($stmtSub);
 
-// Identifikasi materi Vektor
+// Identifikasi materi
 $isVektor = ($materi["judul"] === "Vektor");
+$isRotasi = ($materi["judul"] === "Dinamika Rotasi");
 
 // Jumlah soal
 $jumlahSoal = 0;
@@ -69,54 +69,47 @@ $jumlahBagian = [
     "A" => 0,
     "B" => 0,
     "C" => 0,
+    "D" => 0,
+    "E" => 0,
     "ESAI" => 0
 ];
 
-// Hitung soal berdasarkan bagian
-$stmtSoal = mysqli_prepare(
-    $conn,
-    "SELECT bagian, jenis_soal, COUNT(*) AS jumlah
-     FROM soal
-     WHERE materi_id = ?
-     GROUP BY bagian, jenis_soal"
-);
+// Hitung jumlah soal sesuai tabel masing-masing materi
+if ($isRotasi) {
+    // Khusus Dinamika Rotasi
+    $stmtSoal = mysqli_prepare(
+        $conn,
+        "SELECT subbab AS bagian, jenis_soal, COUNT(*) AS jumlah
+         FROM soal_dinamika_rotasi
+         GROUP BY subbab, jenis_soal"
+    );
+} else {
+    // Vektor tetap menggunakan tabel soal
+    $stmtSoal = mysqli_prepare(
+        $conn,
+        "SELECT bagian, jenis_soal, COUNT(*) AS jumlah
+         FROM soal
+         WHERE materi_id = ?
+         GROUP BY bagian, jenis_soal"
+    );
 
-mysqli_stmt_bind_param($stmtSoal, "i", $id);
+    mysqli_stmt_bind_param($stmtSoal, "i", $id);
+}
+
 mysqli_stmt_execute($stmtSoal);
-
 $resultSoal = mysqli_stmt_get_result($stmtSoal);
 
 while ($soal = mysqli_fetch_assoc($resultSoal)) {
-
     $jumlah = (int) $soal["jumlah"];
     $jumlahSoal += $jumlah;
 
-    if ($isVektor) {
-
-        if (
-            $soal["bagian"] === "A" &&
-            $soal["jenis_soal"] === "pilihan_ganda"
-        ) {
-            $jumlahBagian["A"] = $jumlah;
-
-        } elseif (
-            $soal["bagian"] === "B" &&
-            $soal["jenis_soal"] === "pilihan_ganda"
-        ) {
-            $jumlahBagian["B"] = $jumlah;
-
-        } elseif (
-            $soal["bagian"] === "C" &&
-            $soal["jenis_soal"] === "pilihan_ganda"
-        ) {
-            $jumlahBagian["C"] = $jumlah;
-
-        } elseif (
-            $soal["bagian"] === "ESAI" &&
-            $soal["jenis_soal"] === "esai"
-        ) {
-            $jumlahBagian["ESAI"] = $jumlah;
-        }
+    if ($soal["jenis_soal"] === "esai") {
+        $jumlahBagian["ESAI"] += $jumlah;
+    } elseif (
+        $soal["jenis_soal"] === "pilihan_ganda" &&
+        isset($jumlahBagian[$soal["bagian"]])
+    ) {
+        $jumlahBagian[$soal["bagian"]] += $jumlah;
     }
 }
 
@@ -126,7 +119,6 @@ mysqli_stmt_close($stmtSoal);
 $bagianSelesai = [];
 
 if ($isVektor) {
-
     $siswaId = (int) $_SESSION["siswa_id"];
 
     $stmtHasil = mysqli_prepare(
@@ -155,7 +147,7 @@ if ($isVektor) {
     mysqli_stmt_close($stmtHasil);
 }
 
-// Aturan akses berurutan
+// Aturan akses latihan Vektor secara berurutan
 $aksesBagian = [
     "A" => true,
     "B" => in_array("A", $bagianSelesai, true),
@@ -163,7 +155,7 @@ $aksesBagian = [
     "ESAI" => in_array("C", $bagianSelesai, true)
 ];
 
-// Data kartu latihan
+// Data kartu latihan Vektor
 $daftarLatihan = [
     "A" => [
         "judul" => "Konsep Vektor",
@@ -195,7 +187,41 @@ $daftarLatihan = [
     ]
 ];
 
-// Informasi bab
+// Data kartu latihan Dinamika Rotasi
+$daftarLatihanRotasi = [
+    "A" => [
+        "judul" => "Momen Gaya dan Momen Kopel",
+        "jenis" => "soal pilihan ganda",
+        "label" => "Bagian A"
+    ],
+    "B" => [
+        "judul" => "Momen Inersia",
+        "jenis" => "soal pilihan ganda",
+        "label" => "Bagian B"
+    ],
+    "C" => [
+        "judul" => "Momentum Sudut",
+        "jenis" => "soal pilihan ganda",
+        "label" => "Bagian C"
+    ],
+    "D" => [
+        "judul" => "Usaha, Energi, dan Daya pada Gerak Rotasi",
+        "jenis" => "soal pilihan ganda",
+        "label" => "Bagian D"
+    ],
+    "E" => [
+        "judul" => "Hukum Newton pada Gerak Rotasi",
+        "jenis" => "soal pilihan ganda",
+        "label" => "Bagian E"
+    ],
+    "ESAI" => [
+        "judul" => "Evaluasi Esai",
+        "jenis" => "soal esai",
+        "label" => "Evaluasi"
+    ]
+];
+
+// Informasi bab Vektor
 $namaBab = [
     "A" => "Konsep Vektor",
     "B" => "Representasi Vektor",
@@ -216,11 +242,8 @@ require_once "includes/head.php";
     <!-- HEADER MATERI -->
     <section class="border-b border-darktext/10 bg-white">
         <div class="mx-auto grid max-w-6xl items-center gap-8 px-4 py-10 sm:px-6 lg:grid-cols-2 lg:py-14">
-
             <div>
-
                 <div class="flex flex-wrap items-center gap-2">
-
                     <span class="rounded-full bg-lavender px-3 py-1 text-xs font-semibold text-navy">
                         Kelas <?php echo e($materi["kelas"]); ?>
                     </span>
@@ -232,7 +255,6 @@ require_once "includes/head.php";
                     <span class="rounded-full bg-softyellow/40 px-3 py-1 text-xs font-semibold text-darktext">
                         <?php echo $jumlahSoal; ?> Soal Latihan
                     </span>
-
                 </div>
 
                 <h1 class="mt-4 font-heading text-3xl font-bold text-navy sm:text-4xl">
@@ -246,41 +268,30 @@ require_once "includes/head.php";
                 <p class="mt-4 text-sm text-darktext/60">
                     Pelajari submateri secara berurutan dari atas ke bawah supaya pemahamanmu berkembang secara bertahap.
                 </p>
-
             </div>
 
             <div class="flex justify-center lg:justify-end">
-
                 <?php if ($isVektor): ?>
-
                     <img
                         src="assets/images/vektor-illustration.png"
                         alt="Ilustrasi materi Vektor"
                         class="h-52 w-full max-w-md rounded-2xl object-contain sm:h-64"
                     >
-
                 <?php else: ?>
-
                     <img
                         src="assets/images/rotasi-illustration.png"
                         alt="Ilustrasi materi Dinamika Rotasi"
                         class="h-52 w-full max-w-md rounded-2xl object-contain sm:h-64"
                     >
-
                 <?php endif; ?>
-
             </div>
-
         </div>
     </section>
-
 
     <!-- DAFTAR SUBMATERI -->
     <section class="py-9 sm:py-12">
         <div class="mx-auto max-w-4xl px-4 sm:px-6">
-
             <div class="mb-5">
-
                 <h2 class="font-heading text-xl font-bold text-navy">
                     Daftar Submateri
                 </h2>
@@ -288,22 +299,17 @@ require_once "includes/head.php";
                 <p class="mt-1 text-sm text-darktext/60">
                     Pilih materi yang ingin kamu pelajari.
                 </p>
-
             </div>
 
             <div class="flex flex-col gap-3">
-
                 <?php if (count($submateriRows) > 0): ?>
-
                     <?php
                     $urutan = 1;
                     $babAktif = null;
                     ?>
 
                     <?php foreach ($submateriRows as $sub): ?>
-
                         <?php if (!empty($sub["bab"]) && $sub["bab"] !== $babAktif): ?>
-
                             <?php $babAktif = $sub["bab"]; ?>
 
                             <h3 class="mt-3 font-heading text-xs font-bold uppercase tracking-wide text-blue sm:text-sm">
@@ -311,14 +317,12 @@ require_once "includes/head.php";
                                 ·
                                 <?php echo e($namaBab[$babAktif] ?? "Bagian " . $babAktif); ?>
                             </h3>
-
                         <?php endif; ?>
 
                         <a
                             href="submateri-detail.php?id=<?php echo (int) $sub["id"]; ?>"
                             class="group flex items-center gap-3 rounded-2xl border border-darktext/10 bg-white p-3.5 transition-all hover:border-blue/30 hover:shadow-md hover:shadow-navy/5 sm:gap-4 sm:p-4"
                         >
-
                             <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-lightblue font-heading text-sm font-bold text-navy sm:h-10 sm:w-10">
                                 <?php echo $urutan++; ?>
                             </span>
@@ -341,21 +345,14 @@ require_once "includes/head.php";
                             >
                                 <path d="m9 18 6-6-6-6"/>
                             </svg>
-
                         </a>
-
                     <?php endforeach; ?>
-
                 <?php else: ?>
-
                     <div class="rounded-2xl border border-darktext/10 bg-white p-8 text-center text-sm text-darktext/60">
                         Submateri untuk materi ini belum tersedia.
                     </div>
-
                 <?php endif; ?>
-
             </div>
-
 
             <!-- FITUR LATIHAN -->
             <div class="mt-9">
@@ -363,7 +360,6 @@ require_once "includes/head.php";
                 <?php if ($isVektor): ?>
 
                     <div class="mb-4">
-
                         <h2 class="font-heading text-xl font-bold text-navy">
                             Latihan Soal
                         </h2>
@@ -371,15 +367,11 @@ require_once "includes/head.php";
                         <p class="mt-1 text-sm leading-relaxed text-darktext/65">
                             Selesaikan latihan secara berurutan untuk membuka bagian berikutnya.
                         </p>
-
                     </div>
 
-
-                    <!-- PROGRES LATIHAN -->
+                    <!-- PROGRES LATIHAN VEKTOR -->
                     <div class="mb-4 rounded-2xl border border-blue-100 bg-lightblue/60 p-4">
-
                         <div class="flex items-center justify-between gap-3">
-
                             <div>
                                 <p class="text-sm font-semibold text-navy">
                                     Progres Latihan
@@ -393,26 +385,19 @@ require_once "includes/head.php";
                             <span class="rounded-full bg-white px-3 py-1.5 text-xs font-bold text-navy">
                                 <?php echo count($bagianSelesai); ?>/4 selesai
                             </span>
-
                         </div>
 
                         <div class="mt-3 h-2 overflow-hidden rounded-full bg-white">
-
                             <div
                                 class="h-full rounded-full bg-blue transition-all"
                                 style="width: <?php echo (count($bagianSelesai) / 4) * 100; ?>%"
                             ></div>
-
                         </div>
-
                     </div>
 
-
-                    <!-- KARTU LATIHAN -->
+                    <!-- KARTU LATIHAN VEKTOR -->
                     <div class="grid gap-3 sm:grid-cols-2">
-
                         <?php foreach ($daftarLatihan as $kode => $latihan): ?>
-
                             <?php
                             $sudahSelesai = in_array(
                                 $kode,
@@ -421,7 +406,6 @@ require_once "includes/head.php";
                             );
 
                             $terbuka = $aksesBagian[$kode];
-
                             $adaSoal = $jumlahBagian[$kode] > 0;
 
                             $kelasBorder = ($kode === "ESAI")
@@ -443,11 +427,8 @@ require_once "includes/head.php";
                             ?>
 
                             <article class="rounded-2xl border <?php echo $kelasBorder; ?> bg-white p-4 shadow-sm">
-
                                 <div class="flex items-start justify-between gap-3">
-
                                     <div>
-
                                         <span class="text-xs font-semibold uppercase tracking-wide <?php echo $kelasLabel; ?>">
                                             <?php echo e($latihan["label"]); ?>
                                         </span>
@@ -455,13 +436,10 @@ require_once "includes/head.php";
                                         <h3 class="mt-1 font-heading font-bold text-navy">
                                             <?php echo e($latihan["judul"]); ?>
                                         </h3>
-
                                     </div>
 
                                     <span class="flex h-10 w-10 items-center justify-center rounded-xl <?php echo $kelasIkon; ?> font-heading font-bold text-navy">
-
                                         <?php if (!$terbuka): ?>
-
                                             <svg
                                                 xmlns="http://www.w3.org/2000/svg"
                                                 width="20"
@@ -476,17 +454,11 @@ require_once "includes/head.php";
                                                 <rect x="3" y="11" width="18" height="11" rx="2"/>
                                                 <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
                                             </svg>
-
                                         <?php else: ?>
-
                                             <?php echo e($latihan["ikon"]); ?>
-
                                         <?php endif; ?>
-
                                     </span>
-
                                 </div>
-
 
                                 <p class="mt-2 text-sm text-darktext/65">
                                     <?php echo $jumlahBagian[$kode]; ?>
@@ -494,11 +466,8 @@ require_once "includes/head.php";
                                     <?php echo e($latihan["jenis"]); ?>
                                 </p>
 
-
                                 <?php if (!$terbuka): ?>
-
                                     <div class="mt-4 rounded-xl bg-gray-100 px-3 py-3 text-center">
-
                                         <p class="text-xs font-semibold text-gray-600">
                                             <span class="inline-flex items-center gap-1">
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -512,32 +481,26 @@ require_once "includes/head.php";
                                         <p class="mt-1 text-xs text-gray-500">
                                             Selesaikan bagian sebelumnya untuk membuka latihan ini.
                                         </p>
-
                                     </div>
 
                                 <?php elseif (!$adaSoal): ?>
-
                                     <span class="mt-4 inline-flex w-full justify-center rounded-full bg-gray-100 px-4 py-2.5 text-sm font-semibold text-gray-500">
                                         Soal belum tersedia
                                     </span>
 
                                 <?php else: ?>
-
                                     <a
                                         href="<?php echo e($urlLatihan); ?>"
                                         class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full bg-navy px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue"
                                     >
-
                                         <?php if ($sudahSelesai): ?>
                                             Kerjakan Lagi
                                         <?php else: ?>
                                             Mulai Latihan
                                         <?php endif; ?>
-
                                     </a>
 
                                     <?php if ($sudahSelesai): ?>
-
                                         <p class="mt-2 text-center text-xs font-medium text-green-700">
                                             <span class="inline-flex items-center gap-1">
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -546,27 +509,99 @@ require_once "includes/head.php";
                                                 Sudah dikumpulkan
                                             </span>
                                         </p>
-
                                     <?php endif; ?>
-
                                 <?php endif; ?>
-
                             </article>
-
                         <?php endforeach; ?>
-
                     </div>
-
 
                     <p class="mt-3 text-xs leading-relaxed text-darktext/50">
                         Target latihan terdiri dari 45 soal pilihan ganda dan 5 soal esai. Setiap bagian harus dikumpulkan sebelum bagian berikutnya terbuka.
                     </p>
 
+                <?php elseif ($isRotasi): ?>
+
+                    <!-- LATIHAN SOAL DINAMIKA ROTASI -->
+                    <div class="mb-4">
+                        <h2 class="font-heading text-xl font-bold text-navy">
+                            Latihan Soal
+                        </h2>
+
+                        <p class="mt-1 text-sm leading-relaxed text-darktext/65">
+                            Kerjakan latihan soal pada setiap bagian untuk menguji pemahamanmu tentang Dinamika Rotasi.
+                        </p>
+                    </div>
+
+                    <!-- KARTU LATIHAN DINAMIKA ROTASI -->
+                    <div class="grid gap-3 sm:grid-cols-2">
+                        <?php foreach ($daftarLatihanRotasi as $kode => $latihan): ?>
+                            <?php
+                            $adaSoal = $jumlahBagian[$kode] > 0;
+
+                            $kelasBorder = ($kode === "ESAI")
+                                ? "border-purple-100"
+                                : "border-blue-100";
+
+                            $kelasLabel = ($kode === "ESAI")
+                                ? "text-purple-600"
+                                : "text-blue";
+
+                            $kelasIkon = ($kode === "ESAI")
+                                ? "bg-lavender"
+                                : "bg-lightblue";
+
+                            $ikon = ($kode === "ESAI") ? "E" : $kode;
+
+                            $urlLatihan = "latihan-rotasi.php?bagian="
+                                . urlencode($kode);
+                            ?>
+
+                            <article class="rounded-2xl border <?php echo $kelasBorder; ?> bg-white p-4 shadow-sm">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div>
+                                        <span class="text-xs font-semibold uppercase tracking-wide <?php echo $kelasLabel; ?>">
+                                            <?php echo e($latihan["label"]); ?>
+                                        </span>
+
+                                        <h3 class="mt-1 font-heading font-bold text-navy">
+                                            <?php echo e($latihan["judul"]); ?>
+                                        </h3>
+                                    </div>
+
+                                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl <?php echo $kelasIkon; ?> font-heading font-bold text-navy">
+                                        <?php echo e($ikon); ?>
+                                    </span>
+                                </div>
+
+                                <p class="mt-2 text-sm text-darktext/65">
+                                    <?php echo $jumlahBagian[$kode]; ?>
+                                    <?php echo e($latihan["jenis"]); ?>
+                                </p>
+
+                                <?php if (!$adaSoal): ?>
+                                    <span class="mt-4 inline-flex w-full justify-center rounded-full bg-gray-100 px-4 py-2.5 text-sm font-semibold text-gray-500">
+                                        Soal belum tersedia
+                                    </span>
+                                <?php else: ?>
+                                    <a
+                                        href="<?php echo e($urlLatihan); ?>"
+                                        class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full bg-navy px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue"
+                                    >
+                                        Mulai Latihan
+                                    </a>
+                                <?php endif; ?>
+                            </article>
+                        <?php endforeach; ?>
+                    </div>
+
+                    <p class="mt-3 text-xs leading-relaxed text-darktext/50">
+                        Pilih bagian latihan yang ingin dikerjakan. Setiap bagian memiliki latihan soal sesuai dengan materi Dinamika Rotasi.
+                    </p>
+
                 <?php else: ?>
 
-                    <!-- MATERI SELAIN VEKTOR -->
+                    <!-- MATERI SELAIN VEKTOR DAN DINAMIKA ROTASI -->
                     <div class="rounded-2xl border border-darktext/10 bg-lightblue p-5">
-
                         <h3 class="font-heading text-sm font-semibold text-navy">
                             Latihan Soal
                         </h3>
@@ -574,19 +609,14 @@ require_once "includes/head.php";
                         <p class="mt-1 text-sm text-darktext/70">
                             Latihan untuk materi ini belum tersedia.
                         </p>
-
                     </div>
 
                 <?php endif; ?>
 
-
                 <!-- CHATBOT -->
                 <div class="mt-4 rounded-2xl border border-darktext/10 bg-lavender p-5">
-
                     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-
                         <div>
-
                             <h3 class="font-heading text-sm font-semibold text-navy">
                                 Butuh Bantuan Belajar?
                             </h3>
@@ -594,7 +624,6 @@ require_once "includes/head.php";
                             <p class="mt-1 text-sm text-darktext/70">
                                 Tanyakan konsep yang belum kamu pahami kepada PhyBot.
                             </p>
-
                         </div>
 
                         <a
@@ -603,13 +632,10 @@ require_once "includes/head.php";
                         >
                             Tanya PhyBot
                         </a>
-
                     </div>
-
                 </div>
 
             </div>
-
         </div>
     </section>
 

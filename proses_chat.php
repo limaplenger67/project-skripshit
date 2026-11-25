@@ -7,108 +7,225 @@ require_once "includes/auth.php";
 
 requireLogin();
 
-// Ambil konfigurasi Gemini
-$configAI = require "config/ai.php";
+function kirimJson($data, $status = 200)
+{
+    http_response_code($status);
 
-// Pastikan request menggunakan POST
-if ($_SERVER["REQUEST_METHOD"] !== "POST") {
-    http_response_code(405);
-    echo json_encode([
-        "success" => false,
-        "message" => "Metode request tidak diizinkan."
-    ]);
+    echo json_encode(
+        $data,
+        JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+    );
+
     exit;
 }
 
-// Ambil pesan siswa
+
+// ==========================================
+// VALIDASI REQUEST
+// ==========================================
+
+if ($_SERVER["REQUEST_METHOD"] !== "POST") {
+
+    kirimJson([
+        "success" => false,
+        "message" => "Metode request tidak diizinkan."
+    ], 405);
+
+}
+
 $pesan = trim($_POST["pesan"] ?? "");
 
+$materiId = isset($_POST["materi_id"]) &&
+    is_numeric($_POST["materi_id"])
+        ? (int) $_POST["materi_id"]
+        : 0;
+
+
 if ($pesan === "") {
-    echo json_encode([
+
+    kirimJson([
         "success" => false,
         "message" => "Pertanyaan tidak boleh kosong."
-    ]);
-    exit;
+    ], 400);
+
 }
 
 if (mb_strlen($pesan) > 3000) {
-    echo json_encode([
+
+    kirimJson([
         "success" => false,
         "message" => "Pertanyaan terlalu panjang. Maksimal 3000 karakter."
-    ]);
-    exit;
+    ], 400);
+
 }
 
-// Pastikan API Key tersedia
-if (empty($configAI["api_key"])) {
-    http_response_code(500);
-    echo json_encode([
-        "success" => false,
-        "message" => "Konfigurasi API Gemini belum lengkap."
-    ]);
-    exit;
+
+// ==========================================
+// AMBIL KONTEKS MATERI
+// ==========================================
+
+$materi = null;
+
+if ($materiId > 0) {
+
+    $stmtMateri = mysqli_prepare(
+        $conn,
+        "SELECT id, judul, kelas
+         FROM materi
+         WHERE id = ?
+         AND status_publikasi = 'publik'
+         LIMIT 1"
+    );
+
+    if ($stmtMateri) {
+
+        mysqli_stmt_bind_param(
+            $stmtMateri,
+            "i",
+            $materiId
+        );
+
+        mysqli_stmt_execute($stmtMateri);
+
+        $materi = mysqli_fetch_assoc(
+            mysqli_stmt_get_result($stmtMateri)
+        );
+
+        mysqli_stmt_close($stmtMateri);
+
+    }
+
 }
 
-// Instruksi khusus PhyBot
-$systemInstruction = "
-Kamu adalah PhyBot, asisten pembelajaran Fisika
-pada website PhyZone untuk siswa SMA.
 
-Fokus utama kamu adalah materi Vektor kelas 10 SMA.
+if (!$materi) {
 
-Tugas kamu:
-1. Menjelaskan konsep Fisika dengan bahasa sederhana.
-2. Membantu siswa memahami lambang dan notasi vektor.
-3. Menjelaskan cara menggambar dan sifat-sifat vektor.
-4. Menjelaskan komponen dan representasi vektor.
-5. Membantu operasi penjumlahan dan pengurangan vektor.
-6. Membantu menyelesaikan soal secara bertahap.
-7. Menjelaskan rumus beserta arti setiap simbol.
-8. Memberikan contoh sederhana jika diperlukan.
+    $materiId = 0;
+    $materiJudul = "Fisika umum";
+    $materiKelas = "SMA";
 
-Gunakan bahasa Indonesia yang ramah, sopan,
-dan mudah dipahami siswa SMA.
+} else {
 
-Jika siswa bertanya soal hitungan:
-- Tuliskan informasi yang diketahui.
-- Tuliskan apa yang ditanyakan.
-- Jelaskan rumus yang digunakan.
-- Tunjukkan langkah penyelesaian.
-- Berikan hasil akhir beserta satuannya jika ada.
+    $materiJudul = trim($materi["judul"]);
+    $materiKelas = trim((string) $materi["kelas"]);
 
-Jangan hanya memberikan jawaban akhir.
+}
 
-Jika pertanyaan di luar pembelajaran Fisika,
-jawab dengan sopan bahwa kamu adalah pendamping
-belajar Fisika PhyZone.
 
-Jangan mengarang informasi atau rumus.
+// ==========================================
+// INSTRUKSI KHUSUS BERDASARKAN MATERI
+// ==========================================
+
+if (stripos($materiJudul, "vektor") !== false) {
+
+    $fokusMateri = <<<TEXT
+KONTEKS UTAMA: VEKTOR KELAS 10 SMA.
+
+Prioritaskan pembahasan konsep vektor, besaran skalar dan vektor, notasi, penggambaran vektor, sifat vektor, komponen vektor, penguraian dengan trigonometri, penjumlahan dan pengurangan vektor, resultan, aturan sinus dan kosinus, serta perkalian titik dan silang.
+
+Gunakan tingkat penjelasan yang sesuai untuk siswa kelas 10 SMA.
+TEXT;
+
+} elseif (
+    stripos($materiJudul, "dinamika rotasi") !== false ||
+    stripos($materiJudul, "rotasi") !== false
+) {
+
+    $fokusMateri = <<<TEXT
+KONTEKS UTAMA: DINAMIKA ROTASI KELAS 11 SMA.
+
+Prioritaskan pembahasan gerak rotasi, momen gaya atau torsi, momen kopel, momen inersia, hukum Newton pada gerak rotasi, momentum sudut, usaha, energi, dan daya pada gerak rotasi.
+
+Gunakan tingkat penjelasan yang sesuai untuk siswa kelas 11 SMA.
+
+Jangan mencampuradukkan rumus dinamika rotasi dengan rumus vektor. Jika konsep vektor diperlukan untuk menjelaskan torsi atau besaran lain, jelaskan keterkaitannya secara tepat.
+TEXT;
+
+} else {
+
+    $fokusMateri = <<<TEXT
+KONTEKS UTAMA: PENDAMPING BELAJAR FISIKA SMA SECARA UMUM.
+
+Jawab pertanyaan Fisika dari berbagai topik SMA, misalnya mekanika, gerak, gaya, energi, momentum, fluida, suhu dan kalor, gelombang, bunyi, cahaya, listrik, dan magnet.
+
+Sesuaikan tingkat penjelasan dengan kelas siswa jika diketahui.
+TEXT;
+
+}
+
+
+// ==========================================
+// SYSTEM INSTRUCTION PHYBOT
+// ==========================================
+
+$systemInstruction = <<<TEXT
+Kamu adalah PhyBot, asisten pembelajaran Fisika pada website PhyZone untuk siswa SMA.
+
+$fokusMateri
+
+ATURAN PERAN:
+
+1. Kamu boleh menjawab pertanyaan Fisika SMA dari berbagai topik, bukan hanya materi utama halaman ini.
+2. Jika siswa bertanya tentang materi utama yang sedang dipelajari, berikan penjelasan yang lebih terarah dan mendalam.
+3. Jika siswa bertanya tentang topik Fisika lain, tetap bantu menjawab selama masih berkaitan dengan pembelajaran Fisika.
+4. Jika pertanyaan tidak berkaitan dengan Fisika atau pembelajaran, jelaskan dengan sopan bahwa kamu adalah pendamping belajar Fisika PhyZone.
+5. Jangan mengarang fakta, data, satuan, atau rumus. Jika informasi kurang, sampaikan asumsi yang digunakan.
+6. Gunakan bahasa Indonesia yang ramah, jelas, dan sesuai tingkat siswa SMA.
+
+ATURAN MENYELESAIKAN SOAL:
+
+1. Tuliskan informasi yang diketahui.
+2. Tuliskan hal yang ditanyakan.
+3. Tuliskan rumus yang sesuai.
+4. Jelaskan arti simbol yang digunakan jika diperlukan.
+5. Tunjukkan substitusi angka dan langkah perhitungan secara runtut.
+6. Tuliskan hasil akhir beserta satuan dan arah jika diperlukan.
+7. Jangan hanya memberikan jawaban akhir.
+8. Periksa konsistensi satuan dan tanda positif-negatif.
+
+ATURAN PENULISAN RUMUS:
+
+1. Semua rumus matematika harus ditulis menggunakan LaTeX.
+2. Rumus di dalam kalimat gunakan delimiter \( ... \).
+3. Rumus yang berdiri sendiri gunakan delimiter \[ ... \] dan tulis pada baris tersendiri.
+4. Contoh penulisan komponen vektor: \( A_x = A \cos \theta \) dan \( A_y = A \sin \theta \).
+5. Contoh rumus torsi: \( \tau = r F \sin \theta \).
+6. Gunakan \cdot untuk perkalian jika diperlukan, \frac untuk pecahan, \sqrt untuk akar, dan \mathrm{} untuk satuan atau keterangan teks di dalam rumus.
+7. Jangan menulis rumus dalam code block atau membungkusnya dengan tanda backtick.
+8. Pastikan setiap delimiter rumus dibuka dan ditutup dengan benar.
 
 ATURAN FORMAT JAWABAN:
-1. Gunakan teks biasa yang rapi dan mudah dibaca.
-2. Jangan gunakan tanda bintang (*) untuk penekanan.
-3. Jangan gunakan format Markdown seperti **tebal** atau # judul.
-4. Jangan gunakan garis pemisah seperti ---.
-5. Jangan gunakan tanda kutip Markdown atau simbol >.
-6. Jika membuat judul, tuliskan langsung tanpa simbol khusus.
-7. Gunakan penomoran biasa (1., 2., 3.) jika diperlukan.
-8. Pisahkan paragraf agar jawaban tidak terlalu padat.
-9. Tuliskan rumus Fisika dengan format sederhana.
-10. Hindari penggunaan simbol dekoratif yang tidak diperlukan.
-";
 
-// Riwayat percakapan
-if (!isset($_SESSION["riwayat_phybot"])) {
-    $_SESSION["riwayat_phybot"] = [];
+1. Gunakan paragraf dan baris baru agar jawaban mudah dibaca.
+2. Gunakan judul sederhana jika diperlukan.
+3. Boleh menggunakan daftar bernomor untuk langkah penyelesaian.
+4. Hindari tabel yang terlalu lebar.
+5. Jangan gunakan simbol dekoratif secara berlebihan.
+6. Jangan menuliskan jawaban dalam format JSON atau HTML.
+TEXT;
+
+
+// ==========================================
+// RIWAYAT CHAT TERPISAH PER MATERI
+// ==========================================
+
+$sessionHistoryKey = "riwayat_phybot_materi_" .
+    ($materiId > 0 ? $materiId : "umum");
+
+if (
+    !isset($_SESSION[$sessionHistoryKey]) ||
+    !is_array($_SESSION[$sessionHistoryKey])
+) {
+
+    $_SESSION[$sessionHistoryKey] = [];
+
 }
 
-// Ambil maksimal 10 pesan sebelumnya
 $contents = array_slice(
-    $_SESSION["riwayat_phybot"],
+    $_SESSION[$sessionHistoryKey],
     -10
 );
 
-// Tambahkan pertanyaan terbaru
 $contents[] = [
     "role" => "user",
     "parts" => [
@@ -116,137 +233,179 @@ $contents[] = [
     ]
 ];
 
-// Payload Gemini
+
+// ==========================================
+// KONFIGURASI GEMINI
+// ==========================================
+
+$configAI = require "config/ai.php";
+
+if (
+    empty($configAI["api_key"]) ||
+    empty($configAI["api_url"])
+) {
+
+    kirimJson([
+        "success" => false,
+        "message" => "Konfigurasi API Gemini belum lengkap. Periksa config/ai.php."
+    ], 500);
+
+}
+
+
+// ==========================================
+// PAYLOAD GEMINI
+// ==========================================
+
 $payload = [
+
     "systemInstruction" => [
         "parts" => [
             ["text" => $systemInstruction]
         ]
     ],
+
     "contents" => $contents,
+
     "generationConfig" => [
-        "temperature" => 0.7,
-        "maxOutputTokens" => 2048
+        "temperature" => 0.6,
+        "maxOutputTokens" => 3000
     ]
+
 ];
 
-// Kirim request ke Gemini
+
+// ==========================================
+// KIRIM REQUEST KE GEMINI
+// ==========================================
+
 $ch = curl_init($configAI["api_url"]);
 
 curl_setopt_array($ch, [
+
     CURLOPT_RETURNTRANSFER => true,
+
     CURLOPT_POST => true,
+
     CURLOPT_HTTPHEADER => [
         "Content-Type: application/json",
         "x-goog-api-key: " . $configAI["api_key"]
     ],
+
     CURLOPT_POSTFIELDS => json_encode(
         $payload,
-        JSON_UNESCAPED_UNICODE
+        JSON_UNESCAPED_UNICODE |
+        JSON_UNESCAPED_SLASHES
     ),
+
+    CURLOPT_CONNECTTIMEOUT => 15,
+
     CURLOPT_TIMEOUT => 60
+
 ]);
 
+
 $response = curl_exec($ch);
+
 $curlError = curl_error($ch);
-$statusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+$statusCode = (int) curl_getinfo(
+    $ch,
+    CURLINFO_HTTP_CODE
+);
 
 curl_close($ch);
 
-// Periksa koneksi
+
+// ==========================================
+// PERIKSA KONEKSI
+// ==========================================
+
 if ($response === false) {
-    http_response_code(500);
 
-    echo json_encode([
+    kirimJson([
         "success" => false,
-        "message" => "Gagal menghubungi Gemini: " . $curlError
-    ]);
+        "message" => "Gagal menghubungi layanan AI. " . $curlError
+    ], 500);
 
-    exit;
 }
 
-// Ubah respons menjadi array
+
 $result = json_decode($response, true);
 
-// Periksa error dari Gemini
-if ($statusCode !== 200) {
-    http_response_code(500);
 
-    echo json_encode([
+// ==========================================
+// PERIKSA ERROR GEMINI
+// ==========================================
+
+if ($statusCode < 200 || $statusCode >= 300) {
+
+    $pesanError = $result["error"]["message"]
+        ?? "Terjadi kesalahan saat menghubungi Gemini.";
+
+    kirimJson([
         "success" => false,
-        "message" => $result["error"]["message"]
-            ?? "Terjadi kesalahan saat menghubungi Gemini."
-    ]);
+        "message" => $pesanError
+    ], 500);
 
-    exit;
 }
 
-// Ambil jawaban AI
+
+// ==========================================
+// AMBIL JAWABAN
+// ==========================================
+
 $jawaban = "";
 
 foreach (
     ($result["candidates"][0]["content"]["parts"] ?? [])
     as $part
 ) {
+
     if (isset($part["text"])) {
         $jawaban .= $part["text"];
     }
+
 }
-
-// Periksa jawaban kosong
-if (trim($jawaban) === "") {
-    echo json_encode([
-        "success" => false,
-        "message" => "PhyBot belum dapat memberikan jawaban. Silakan coba lagi."
-    ]);
-
-    exit;
-}
-
-// Bersihkan format Markdown yang mungkin masih diberikan Gemini
-$jawaban = preg_replace('/^\s{0,3}#{1,6}\s*/m', '', $jawaban);
-
-$jawaban = preg_replace(
-    '/\*\*(.*?)\*\*/s',
-    '$1',
-    $jawaban
-);
-
-$jawaban = preg_replace(
-    '/(?<!\*)\*([^*\n]+)\*(?!\*)/',
-    '$1',
-    $jawaban
-);
-
-$jawaban = preg_replace(
-    '/^\s*(?:---+|___+|\*\*\*+)\s*$/m',
-    '',
-    $jawaban
-);
-
-$jawaban = preg_replace('/^\s*>\s?/m', '', $jawaban);
-
-$jawaban = str_replace("`", "", $jawaban);
 
 $jawaban = trim($jawaban);
 
-// Simpan percakapan ke session
-$_SESSION["riwayat_phybot"] = array_slice(
-    $contents,
-    -10
-);
 
-$_SESSION["riwayat_phybot"][] = [
+if ($jawaban === "") {
+
+    kirimJson([
+        "success" => false,
+        "message" => "PhyBot belum dapat memberikan jawaban. Silakan coba lagi."
+    ], 502);
+
+}
+
+
+// ==========================================
+// SIMPAN RIWAYAT PER MATERI
+// ==========================================
+
+$riwayatBaru = $contents;
+
+$riwayatBaru[] = [
     "role" => "model",
     "parts" => [
         ["text" => $jawaban]
     ]
 ];
 
-// Kirim jawaban ke halaman chat
-echo json_encode([
-    "success" => true,
-    "jawaban" => $jawaban
-], JSON_UNESCAPED_UNICODE);
+$_SESSION[$sessionHistoryKey] = array_slice(
+    $riwayatBaru,
+    -12
+);
 
-exit;
+
+// ==========================================
+// KIRIM JAWABAN KE CHAT
+// ==========================================
+
+kirimJson([
+    "success" => true,
+    "jawaban" => $jawaban,
+    "materi" => $materiJudul
+]);

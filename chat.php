@@ -49,8 +49,9 @@ require_once "includes/head.php";
 
                 <p class="text-sm text-blue-800 leading-relaxed">
                     Hai! Aku PhyBot, teman belajarmu di PhyZone.
-                    Yuk, tanyakan apa saja tentang materi Fisika,
-                    khususnya materi Vektor kelas 10 SMA.
+                    Yuk, tanyakan apa saja tentang materi Fisika.
+                    Aku siap membantu menjelaskan konsep, rumus,
+                    maupun latihan soal.
                 </p>
 
             </div>
@@ -85,7 +86,7 @@ require_once "includes/head.php";
 
                             <br><br>
 
-                            Senang bertemu denganmu. Ada materi Vektor yang ingin kamu pelajari hari ini?
+                            Senang bertemu denganmu. Ada materi Fisika yang ingin kamu pelajari hari ini?
 
                             Aku siap membantu menjelaskan konsep, rumus, maupun latihan soal.
 
@@ -189,7 +190,6 @@ require_once "includes/head.php";
                         >
                             <path d="m22 2-7 20-4-9-9-4Z"/>
                             <path d="M22 2 11 13"/>
-
                         </svg>
 
                     </button>
@@ -221,12 +221,125 @@ require_once "includes/head.php";
     line-height: 1.5;
 }
 
+/* Tampilan umum pesan */
 .chat-pesan {
-    white-space: pre-wrap;
+    white-space: normal;
     overflow-wrap: anywhere;
+    line-height: 1.75;
+    word-break: normal;
+}
+
+/* Judul jawaban */
+.chat-pesan h1,
+.chat-pesan h2,
+.chat-pesan h3 {
+    color: #173A70;
+    font-weight: 700;
+    line-height: 1.4;
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.chat-pesan h1 {
+    font-size: 1.2rem;
+}
+
+.chat-pesan h2 {
+    font-size: 1.1rem;
+}
+
+.chat-pesan h3 {
+    font-size: 1rem;
+}
+
+/* Paragraf */
+.chat-pesan p {
+    margin-bottom: 0.65rem;
+}
+
+.chat-pesan p:last-child {
+    margin-bottom: 0;
+}
+
+/* Teks tebal */
+.chat-pesan strong {
+    color: #173A70;
+    font-weight: 700;
+}
+
+/* Daftar */
+.chat-pesan ul,
+.chat-pesan ol {
+    margin: 0.5rem 0 0.8rem 1.4rem;
+    padding-left: 0.5rem;
+}
+
+.chat-pesan ul {
+    list-style-type: disc;
+}
+
+.chat-pesan ol {
+    list-style-type: decimal;
+}
+
+.chat-pesan li {
+    margin-bottom: 0.35rem;
+    padding-left: 0.2rem;
+}
+
+/* Garis pemisah */
+.chat-pesan hr {
+    border: 0;
+    border-top: 1px solid #dbe3ef;
+    margin: 1rem 0;
+}
+
+/* Rumus matematika */
+.chat-pesan .rumus-display {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    margin: 0.8rem 0;
+    padding: 0.3rem 0;
+    text-align: center;
+}
+
+.chat-pesan .rumus-inline {
+    display: inline;
+}
+
+.chat-pesan mjx-container {
+    max-width: 100%;
+}
+
+.chat-pesan mjx-container[display="true"] {
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 0.3rem 0;
+}
+
+/* Kode */
+.chat-pesan pre {
+    overflow-x: auto;
+    padding: 0.8rem;
+    margin: 0.6rem 0;
+    border-radius: 0.6rem;
+    background: #f1f5f9;
+}
+
+.chat-pesan code {
+    overflow-wrap: anywhere;
+    border-radius: 0.25rem;
+    background: #f1f5f9;
+    padding: 0.1rem 0.25rem;
 }
 
 </style>
+
+
+<!-- LIBRARY MARKDOWN DAN KEAMANAN HTML -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
 
 
 <!-- JAVASCRIPT CHATBOT -->
@@ -241,6 +354,158 @@ document.addEventListener("DOMContentLoaded", function () {
     const typing = document.getElementById("typing-indicator");
 
     let sedangMengirim = false;
+
+
+    // MENUNGGU MATHJAX SIAP
+    async function tungguMathJax() {
+
+        let percobaan = 0;
+
+        while (
+            (!window.MathJax || !window.MathJax.typesetPromise) &&
+            percobaan < 50
+        ) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            percobaan++;
+        }
+
+        if (window.MathJax && window.MathJax.startup) {
+            try {
+                await window.MathJax.startup.promise;
+            } catch (error) {
+                console.error("MathJax gagal dimuat:", error);
+            }
+        }
+
+    }
+
+
+    // MENGUBAH KARAKTER HTML MENJADI AMAN
+    function escapeHTML(teks) {
+
+        return String(teks).replace(/[&<>"']/g, function (karakter) {
+
+            const daftarKarakter = {
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                '"': "&quot;",
+                "'": "&#039;"
+            };
+
+            return daftarKarakter[karakter];
+
+        });
+
+    }
+
+
+    // MERENDER MARKDOWN DAN RUMUS LATEX
+    async function isiJawabanBot(bubble, teks) {
+
+        const daftarRumus = [];
+
+        /*
+         * Rumus LaTeX diamankan terlebih dahulu
+         * agar tanda matematika tidak rusak oleh Markdown.
+         */
+        const teksTanpaRumus = String(teks).replace(
+            /\\\[([\s\S]*?)\\\]|\\\(([\s\S]*?)\\\)/g,
+            function (cocok, rumusBlok, rumusInline) {
+
+                const indeks = daftarRumus.length;
+
+                daftarRumus.push({
+                    blok: rumusBlok !== undefined,
+                    isi: rumusBlok !== undefined
+                        ? rumusBlok.trim()
+                        : rumusInline.trim()
+                });
+
+                return "PHYZONEFORMULA" + indeks + "END";
+
+            }
+        );
+
+
+        // PROSES MARKDOWN
+        let html;
+
+        if (window.marked) {
+
+            html = window.marked.parse(teksTanpaRumus, {
+                gfm: true,
+                breaks: true
+            });
+
+        } else {
+
+            html = escapeHTML(teksTanpaRumus)
+                .replace(/\n/g, "<br>");
+
+        }
+
+
+        // KEMBALIKAN RUMUS LATEX
+        daftarRumus.forEach(function (rumus, indeks) {
+
+            const kelas = rumus.blok
+                ? "rumus-display"
+                : "rumus-inline";
+
+            const delimiter = rumus.blok
+                ? "\\[" + escapeHTML(rumus.isi) + "\\]"
+                : "\\(" + escapeHTML(rumus.isi) + "\\)";
+
+            const pengganti =
+                '<span class="' + kelas + '">' +
+                delimiter +
+                '</span>';
+
+            html = html.replace(
+                "PHYZONEFORMULA" + indeks + "END",
+                pengganti
+            );
+
+        });
+
+
+        // AMANKAN HTML HASIL MARKDOWN
+        if (window.DOMPurify) {
+
+            html = window.DOMPurify.sanitize(html, {
+                USE_PROFILES: {
+                    html: true
+                }
+            });
+
+        }
+
+
+        // TAMPILKAN JAWABAN
+        bubble.innerHTML = html;
+
+
+        // RENDER RUMUS MENGGUNAKAN MATHJAX
+        await tungguMathJax();
+
+        if (window.MathJax && window.MathJax.typesetPromise) {
+
+            try {
+
+                window.MathJax.typesetClear([bubble]);
+
+                await window.MathJax.typesetPromise([bubble]);
+
+            } catch (error) {
+
+                console.error("Gagal merender rumus:", error);
+
+            }
+
+        }
+
+    }
 
 
     // MENAMBAHKAN PESAN KE RUANG CHAT
@@ -266,7 +531,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         const kolom = document.createElement("div");
 
-        kolom.className = "max-w-[85%]";
+        kolom.className = "max-w-[85%] min-w-0";
 
 
         const nama = document.createElement("p");
@@ -280,12 +545,23 @@ document.addEventListener("DOMContentLoaded", function () {
         const bubble = document.createElement("div");
 
         bubble.className =
-            "chat-pesan rounded-2xl px-4 py-3 text-sm leading-relaxed " +
+            "chat-pesan rounded-2xl px-4 py-3 text-sm " +
             (pengirim === "user"
                 ? "bg-[#3F7FD9] text-white rounded-tr-sm"
                 : "bg-blue-50 text-gray-700 rounded-tl-sm");
 
-        bubble.textContent = teks;
+
+        // PESAN PENGGUNA TETAP TEKS BIASA
+        if (pengirim === "user") {
+
+            bubble.textContent = teks;
+
+        } else {
+
+            // JAWABAN PHYBOT DIPROSES MARKDOWN DAN LATEX
+            isiJawabanBot(bubble, teks);
+
+        }
 
 
         kolom.appendChild(nama);
@@ -312,7 +588,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
 
-    // MENGIRIM PESAN KE GEMINI
+    // MENGIRIM PESAN KE PHYBOT
     async function kirimPesan(teks) {
 
         if (sedangMengirim || !teks.trim()) {
